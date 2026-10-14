@@ -1,0 +1,10 @@
+bin/
+logs/
+*.exe
+*.o
+__pycache__/
+# 上層（Ramulator2）的 .gitignore 會忽略 *.png 與 *.json；
+# 本實驗的圖表與彙整資料（results/figures、results/paper*/paper_data.json）需要納入版控。
+!*.png
+!*.json
+!results/paper/build/
