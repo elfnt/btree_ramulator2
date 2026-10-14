@@ -1,0 +1,878 @@
+<title>Key 稀疏度延伸實驗</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+/* layout: one reading column on a cool-grey plane; prose capped near 40em, figures span the full 880px column on a lighter surface */
+:root{
+  --bg:#f3f5f8; --surface:#fbfcfd; --ink:#10151c; --ink-2:#465061; --muted:#7a8494;
+  --grid:#e2e6ec; --axis:#c0c7d1; --rule:#d9dee6; --accent:#2a78d6; --blind:#e7ebf1;
+  --s-none:#e34948; --s-sanity:#2a78d6; --s-hybrid:#1baf7a; --s-ctrl:#eb6834; --s-full:#4a3aa7;
+  --e-miss:#d8588c; --e-val:#b3bac5; --on-accent:#ffffff;
+  --o-16:#86b6ef; --o-64:#2a78d6; --o-253:#104281;
+  --tip-bg:#10151c; --tip-ink:#f1f3f6; --tip-dim:#aab3c0;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,"Noto Sans TC","PingFang TC","Microsoft JhengHei",monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1114; --surface:#15181c; --ink:#f1f3f6; --ink-2:#b7bfca; --muted:#8791a0;
+    --grid:#262b32; --axis:#3b424c; --rule:#2a3038; --accent:#3987e5; --blind:#21262d;
+    --s-none:#e66767; --s-sanity:#3987e5; --s-hybrid:#199e70; --s-ctrl:#d95926; --s-full:#9085e9;
+  --e-miss:#d55181; --e-val:#525a65; --on-accent:#ffffff;
+    --o-16:#184f95; --o-64:#3987e5; --o-253:#9ec5f4;
+    --tip-bg:#f1f3f6; --tip-ink:#10151c; --tip-dim:#566070;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1114; --surface:#15181c; --ink:#f1f3f6; --ink-2:#b7bfca; --muted:#8791a0;
+  --grid:#262b32; --axis:#3b424c; --rule:#2a3038; --accent:#3987e5; --blind:#21262d;
+  --s-none:#e66767; --s-sanity:#3987e5; --s-hybrid:#199e70; --s-ctrl:#d95926; --s-full:#9085e9;
+  --e-miss:#d55181; --e-val:#525a65; --on-accent:#ffffff;
+  --o-16:#184f95; --o-64:#3987e5; --o-253:#9ec5f4;
+  --tip-bg:#f1f3f6; --tip-ink:#10151c; --tip-dim:#566070;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.8}
+.page{max-width:912px;margin:0 auto;padding-inline:16px;padding-block:40px 72px;display:flex;flex-direction:column;gap:56px}
+header{display:flex;flex-direction:column;gap:14px}
+h1{font-size:clamp(26px,5vw,34px);line-height:1.25;font-weight:700;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h2{font-size:22px;line-height:1.35;font-weight:700;margin:0;text-wrap:balance}
+h3{font-size:16px;font-weight:700;margin:0}
+p{margin:0;max-width:40em}
+.lede{font-size:17px;color:var(--ink-2)}
+.meta{font-family:var(--f-mono);font-size:12.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 18px;line-height:1.6}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+section{display:flex;flex-direction:column;gap:18px;min-width:0}
+.sec-head{display:flex;flex-direction:column;gap:4px}
+code,.mono{font-family:var(--f-mono);font-size:.92em}
+ul.points{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:8px;max-width:42em}
+ul.points li::marker{color:var(--accent)}
+.keylist{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 32px;border-top:2px solid var(--ink)}
+@media (max-width:600px){.keylist{grid-template-columns:minmax(0,1fr)}}
+sup{font-size:.68em;line-height:0}
+.keylist li{padding:14px 0;border-bottom:1px solid var(--rule);font-size:15px;line-height:1.7}
+.keylist b{display:block;font-size:15.5px}
+
+figure{margin:0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:18px 16px 14px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.fig-title{font-weight:700;font-size:15px;line-height:1.5}
+.fig-sub{font-size:13px;color:var(--ink-2);line-height:1.6}
+figcaption{font-size:13px;color:var(--ink-2);line-height:1.7;max-width:52em}
+.plot{position:relative;width:100%;min-width:0}
+.plot svg{display:block;max-width:100%;overflow:visible}
+.narrow{max-width:640px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:13px;color:var(--ink-2);margin:0;padding:0;list-style:none}
+.legend li{display:flex;align-items:center;gap:7px}
+.legend svg{flex:none}
+.sw{width:12px;height:12px;border-radius:2px;flex:none}
+.swline{width:18px;height:2px;flex:none;background:var(--ink)}
+.swdot{width:8px;height:8px;border-radius:50%;flex:none;background:var(--ink-2)}
+.swtick{width:2px;height:14px;flex:none;background:var(--ink)}
+.swband{width:16px;height:12px;flex:none;background:var(--blind);border:1px solid var(--axis)}
+
+.grid{stroke:var(--grid);stroke-width:1}
+.ax{stroke:var(--axis);stroke-width:1}
+.cross{stroke:var(--axis);stroke-width:1}
+.t-axis{fill:var(--muted);font-family:var(--f-mono);font-size:11px;font-variant-numeric:tabular-nums}
+.t-lab{fill:var(--ink-2);font-family:var(--f-mono);font-size:12px}
+.t-val{fill:var(--ink);font-family:var(--f-mono);font-size:12px;font-weight:500}
+.t-ttl{fill:var(--muted);font-family:var(--f-body);font-size:12px}
+.mk{stroke:var(--surface);stroke-width:4;paint-order:stroke}
+.ln{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.hit{fill:transparent;outline:none;cursor:default}
+.hit:focus-visible{stroke:var(--accent);stroke-width:1.5}
+.on{filter:brightness(1.14)}
+.tip{position:absolute;z-index:3;pointer-events:none;background:var(--tip-bg);color:var(--tip-ink);border-radius:5px;padding:8px 10px;font-size:12px;line-height:1.5;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.tip-t{font-family:var(--f-mono);color:var(--tip-dim);font-size:11px;margin-bottom:2px}
+.tip-r{display:flex;align-items:center;gap:7px}
+.tip-r b{font-family:var(--f-mono);font-weight:500;font-variant-numeric:tabular-nums}
+.tip-l{color:var(--tip-dim)}
+.tip-k{width:12px;height:2px;flex:none}
+
+.bitgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px 16px}
+.bitpanel{display:flex;flex-direction:column;gap:6px;min-width:0}
+.bp-t{font-size:13.5px;font-weight:700;line-height:1.4}
+.bp-s{font-family:var(--f-mono);font-size:11.5px;color:var(--muted);line-height:1.4}
+.bar-bit{fill:var(--s-sanity)}
+.band{fill:var(--blind)}
+.cursor{fill:var(--ink);opacity:.12}
+@media (max-width:640px){.bitgrid{grid-template-columns:minmax(0,1fr)}}
+
+.hero{display:flex;flex-wrap:wrap;align-items:center;gap:8px 28px;padding:6px 0}
+.hero-n{font-size:clamp(48px,11vw,68px);font-weight:700;line-height:1;letter-spacing:-.03em;color:var(--ink)}
+.hero-n span{color:var(--accent)}
+.hero p{flex:1 1 280px;font-size:15px;color:var(--ink-2);line-height:1.7}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:0 24px;border-top:1px solid var(--rule)}
+.stat{padding:14px 0 4px;display:flex;flex-direction:column;gap:2px}
+.stat .k{font-size:13px;color:var(--ink-2)}
+.stat .v{font-size:26px;font-weight:700;line-height:1.25}
+.stat .n{font-size:12.5px;color:var(--muted);line-height:1.6}
+
+.tw{overflow-x:auto;max-width:100%}
+table{border-collapse:collapse;font-size:13.5px;line-height:1.5;width:100%}
+th,td{padding:7px 12px 7px 0;text-align:left;border-bottom:1px solid var(--rule);vertical-align:top}
+thead th{font-weight:500;color:var(--ink-2);border-bottom:1px solid var(--axis);font-size:12.5px;white-space:nowrap}
+td.num,th.num{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap;padding-right:16px}
+td.name{font-family:var(--f-mono);white-space:nowrap}
+details{font-size:13px}
+summary{cursor:pointer;color:var(--ink-2);width:max-content;padding:2px 0}
+summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+details[open] summary{margin-bottom:8px}
+.diagram{overflow-x:auto}
+.diagram svg{display:block;width:100%;min-width:500px;max-width:620px;height:auto}
+.d-line{stroke:var(--axis);stroke-width:1.5}
+.d-key{fill:var(--ink)}
+.d-new{fill:var(--surface);stroke:var(--ink);stroke-width:1.5}
+.d-arrow{fill:none;stroke:var(--accent);stroke-width:2}
+.d-head{fill:var(--accent)}
+.d-t{fill:var(--ink);font-family:var(--f-body);font-size:13px}
+.d-s{fill:var(--ink-2);font-family:var(--f-body);font-size:12.5px}
+.d-n{fill:var(--muted);font-family:var(--f-mono);font-size:12px}
+.limits{color:var(--ink-2);font-size:14.5px}
+.duo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 24px}
+@media (max-width:640px){.duo{grid-template-columns:minmax(0,1fr)}}
+.d-dummy{fill:var(--accent)}
+.d-box{fill:var(--surface);stroke:var(--axis);stroke-width:1.5}
+.d-free{fill:var(--blind);stroke:var(--axis);stroke-width:1.5}
+.d-crc{fill:var(--accent);stroke:var(--accent);stroke-width:1.5}
+.d-on{fill:var(--on-accent);font-family:var(--f-mono);font-size:12px}
+.t-grp{fill:var(--ink);font-family:var(--f-mono);font-size:12px;font-weight:500}
+footer{font-family:var(--f-mono);font-size:12px;color:var(--muted);border-top:1px solid var(--rule);padding-top:16px;line-height:1.7}
+@media (prefers-reduced-motion:no-preference){.on{transition:filter .12s}}
+</style>
+
+<div class="page">
+
+<header>
+  <div class="eyebrow">B+ tree 位元翻轉實驗 · E8–E21</div>
+  <h1>Key 稀疏度與結構檢查的偵測範圍</h1>
+  <p class="lede">B+ tree 的結構檢查不需要額外記憶體，但它能偵測多少 key 的位元翻轉，取決於 key 之間的間距。這份報告先量測這個關係，再比較各種補強方式。後半部只使用結構檢查本身：加強檢查規則、利用節點的空槽放 dummy key、把 key 映射到密集的範圍。</p>
+  <div class="meta"><span>1,005 runs</span><span>order 253</span><span>1,000,000 keys</span><span>樹高 3</span><span>λ = 3×10<sup>−3</sup> flips / page / s</span><span>每次讀取都驗證</span></div>
+</header>
+
+<section>
+  <div class="sec-head"><h2>重點</h2></div>
+  <ul class="keylist">
+    <li><b>偵測不到的位元可以事先算出</b>葉節點是 key 間距以下的低位元。內部節點再多約 8 個位元，即使 key 完全連續也一樣。</li>
+    <li><b>內部節點的翻轉傷害大三個數量級</b>沒有保護時，內部節點一次翻轉平均造成 12.86 個錯誤答案，葉節點是 0.0096 個。</li>
+    <li><b>分層方案在 key 密集時划算</b>HYBRID 只用 396 B 可靠記憶體，補上結構檢查與 CTRL_CRC 之間 67% 的 SDC 差距。</li>
+    <li><b>key 稀疏時需要保護葉節點的 key</b>稀疏 key 多出來的 SDC 主要來自葉節點的 key 陣列，HYBRID 在那裡只補上 20% 的差距。</li>
+    <li><b>dummy key 能補回偵測率，但當成一般 key 插入不划算</b>兩側都放時，結構檢查抓到 97% 以上的 key 翻轉。樹變成三倍大，SDC 沒有下降。</li>
+    <li><b>CRC 存在頁面內不需要可靠記憶體</b>把 CRC 放在頁面最後 4 bytes，30 個 run 的錯誤答案數與存在可靠記憶體的版本完全相同。</li>
+    <li><b>父子範圍檢查不花成本就補上內部節點的盲區</b>只翻轉內部節點時，錯誤答案的中位數由 23 到 32 個降到 0 到 1 個，延遲只多 0.1 µs。</li>
+    <li><b>有規律的 key 可以免費解決，無規律的 key 需要映射</b>key 是固定倍數時，三項免費檢查讓「找不到」降到 0。雜湊型 key 用 hash 映射可減少七成，但頁數變兩倍。</li>
+  </ul>
+</section>
+
+<section>
+  <div class="sec-head"><div class="eyebrow">背景</div><h2>為什麼 key 間距會影響偵測</h2></div>
+  <p>結構檢查（SANITY）在每次讀取節點時確認幾項不變量，其中與 key 有關的一項是「節點內的 key 必須嚴格遞增」。一個 key 的某個位元被翻轉後，只要它仍然落在左右鄰居之間，遞增順序就沒有被破壞，結構檢查不會發現。</p>
+  <figure>
+    <div class="fig-title">同一個 key 翻轉不同位元的結果</div>
+    <div class="fig-sub">節點內有三個 key：16、32、48，間距 16 = 2<sup>4</sup></div>
+    <div class="diagram">
+      <svg viewBox="0 0 560 172" role="img" aria-label="數線示意：key 32 翻轉 bit 2 變成 36，仍在 16 與 48 之間，未被偵測；翻轉 bit 5 變成 0，小於左鄰 16，被偵測">
+        <defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0L10,5L0,10Z" class="d-head"/></marker></defs>
+        <text x="40" y="16" class="d-t">翻轉 bit 5：32 → 0</text>
+        <text x="40" y="34" class="d-s">小於左鄰 16，遞增順序被破壞，結構檢查報錯</text>
+        <text x="322" y="72" class="d-t">翻轉 bit 2：32 → 36</text>
+        <text x="322" y="90" class="d-s">仍在 16 與 48 之間，結構檢查不會發現</text>
+        <path d="M266,114 C240,40 70,40 42,114" class="d-arrow" marker-end="url(#ah)"/>
+        <path d="M274,114 C278,88 300,84 299,114" class="d-arrow" marker-end="url(#ah)"/>
+        <line x1="30" y1="128" x2="530" y2="128" class="d-line"/>
+        <line x1="40" y1="122" x2="40" y2="134" class="d-line"/><line x1="155" y1="122" x2="155" y2="134" class="d-line"/><line x1="270" y1="122" x2="270" y2="134" class="d-line"/><line x1="385" y1="122" x2="385" y2="134" class="d-line"/><line x1="500" y1="122" x2="500" y2="134" class="d-line"/>
+        <circle cx="155" cy="128" r="6" class="d-key"/><circle cx="270" cy="128" r="6" class="d-key"/><circle cx="385" cy="128" r="6" class="d-key"/>
+        <circle cx="298.75" cy="128" r="5" class="d-new"/><circle cx="40" cy="128" r="5" class="d-new"/>
+        <text x="40" y="156" text-anchor="middle" class="d-n">0</text><text x="155" y="156" text-anchor="middle" class="d-n">16</text><text x="270" y="156" text-anchor="middle" class="d-n">32</text><text x="385" y="156" text-anchor="middle" class="d-n">48</text><text x="500" y="156" text-anchor="middle" class="d-n">64</text>
+      </svg>
+    </div>
+    <figcaption>實心點是節點內原本的 key，空心點是翻轉後的值。</figcaption>
+  </figure>
+  <p>因此 key 間距為 2<sup>k</sup> 時，最低的 k 個位元翻轉都無法偵測，可偵測的比例約為 (64 − k) / 64。</p>
+  <p>內部節點存的是分隔 key（separator）。相鄰兩個 separator 的間距等於葉節點 key 間距乘上扇出，所以無法偵測的位元會再多 log₂(扇出) 個。這次實驗的節點平均裝 174 個 key，log₂ 174 ≈ 7.4。</p>
+
+  <h3>實驗比較的保護方案</h3>
+  <div class="tw"><table>
+    <thead><tr><th>方案</th><th>讀取時檢查什麼</th><th>可靠記憶體用量</th></tr></thead>
+    <tbody>
+      <tr><td class="name">NONE</td><td>不檢查</td><td>0</td></tr>
+      <tr><td class="name">SANITY</td><td>結構不變量：節點型別、key 數量上限、key 嚴格遞增、指標範圍</td><td>0</td></tr>
+      <tr><td class="name">CTRL_CRC</td><td>SSD header、node header、keys、child pointers 的 CRC。葉節點的 values 不在範圍內</td><td>每個節點 12 B</td></tr>
+      <tr><td class="name">HYBRID</td><td>內部節點同 CTRL_CRC，葉節點同 SANITY</td><td>每個內部節點 12 B</td></tr>
+      <tr><td class="name">FULL_CRC</td><td>整頁 4096 B 的 CRC</td><td>每個節點 12 B</td></tr>
+      <tr><td class="name">INPAGE_CTRL</td><td>涵蓋範圍同 CTRL_CRC，CRC 存在頁面最後 4 bytes</td><td>0</td></tr>
+      <tr><td class="name">INPAGE_FULL</td><td>涵蓋整頁，CRC 存在頁面最後 4 bytes</td><td>0</td></tr>
+    </tbody>
+  </table></div>
+  <p>SDC（silent data corruption）在這裡的定義是：搜尋回傳了錯誤結果，而且整個操作過程沒有任何警報的比例。</p>
+</section>
+
+<section>
+  <div class="sec-head"><div class="eyebrow">E11 · 54 runs</div><h2>偵測不到的位元在哪一層</h2></div>
+  <p>這個實驗只對葉節點、或只對內部節點注入位元翻轉，再量測結構檢查對 key 每一個位元的偵測率。key 間距取 2<sup>0</sup>（連續）、2<sup>16</sup>、2<sup>32</sup> 三種。</p>
+  <figure>
+    <div class="fig-title">結構檢查對 key 各位元的偵測率</div>
+    <div class="fig-sub">橫軸是 key 的位元，0 為最低位。上排只翻轉葉節點，下排只翻轉內部節點。</div>
+    <ul class="legend"><li><span class="sw" style="background:var(--s-sanity)"></span>實測偵測率</li><li><span class="swband"></span>公式預測無法偵測的範圍</li></ul>
+    <div class="bitgrid" id="bits"></div>
+    <figcaption>偵測率 = 結構檢查偵測到的次數 ÷ CTRL_CRC 偵測到的次數。CTRL_CRC 涵蓋整個 key 陣列，它的偵測次數代表該位元實際被翻轉且被讀到的次數。內部節點只有 33 個，每個位元的樣本數為 6 到 28，所以長條高度有雜訊。內部節點可偵測位元的偵測率低於 100%，推測是因為未被偵測的翻轉會留在頁面上，之後同一頁的翻轉不再計入單一位元統計；這點未另外驗證。</figcaption>
+    <details><summary>資料表</summary><div class="tw" id="bits-table"></div></details>
+  </figure>
+  <ul class="points">
+    <li><b>葉節點</b>無法偵測的位元數是 0、16、32，正好等於 key 間距的 log₂。</li>
+    <li><b>內部節點</b>無法偵測的位元數是 8、24、40，公式預測是 7.4、23.4、39.4。</li>
+    <li>key 完全連續時，葉節點的每個位元都能偵測，內部節點仍有 8 個位元偵測不到。</li>
+  </ul>
+
+  <div class="hero">
+    <div class="hero-n">1340<span>×</span></div>
+    <p>沒有保護、key 連續時，內部節點一次位元翻轉平均造成 12.86 個錯誤答案，葉節點一次翻轉造成 0.0096 個。內部節點的翻轉會把整個子樹的搜尋導向錯誤位置。</p>
+  </div>
+  <div class="tw"><table>
+    <thead><tr><th>注入層</th><th>key 間距</th><th class="num">NONE</th><th class="num">SANITY</th><th class="num">CTRL_CRC</th></tr></thead>
+    <tbody>
+      <tr><td>內部節點</td><td class="name">2<sup>0</sup></td><td class="num">12.86</td><td class="num">0.0159</td><td class="num">0</td></tr>
+      <tr><td>內部節點</td><td class="name">2<sup>16</sup></td><td class="num">10.45</td><td class="num">0.0184</td><td class="num">0</td></tr>
+      <tr><td>內部節點</td><td class="name">2<sup>32</sup></td><td class="num">7.43</td><td class="num">0.0161</td><td class="num">0</td></tr>
+      <tr><td>葉節點</td><td class="name">2<sup>0</sup></td><td class="num">0.0096</td><td class="num">0.0041</td><td class="num">0.0036</td></tr>
+      <tr><td>葉節點</td><td class="name">2<sup>16</sup></td><td class="num">0.0095</td><td class="num">0.0056</td><td class="num">0.0036</td></tr>
+      <tr><td>葉節點</td><td class="name">2<sup>32</sup></td><td class="num">0.0099</td><td class="num">0.0065</td><td class="num">0.0036</td></tr>
+    </tbody>
+  </table></div>
+  <p class="fig-sub">表中數字是每次位元翻轉造成的未偵測錯誤答案數。內部節點的注入率放大 50 倍以取得足夠樣本，NONE 的 SDC 已達 0.70，接近飽和，所以 1340 倍是下限。</p>
+  <ul class="points">
+    <li>CTRL_CRC 在只翻轉內部節點時 SDC 為 0。它剩下的 SDC 全部來自葉節點的 values。</li>
+    <li>加上結構檢查後，內部節點每次翻轉的殘餘錯誤數維持在 0.016 到 0.018，不隨 key 間距增加。葉節點則從 0.0041 上升到 0.0065。</li>
+  </ul>
+</section>
+
+<section>
+  <div class="sec-head"><div class="eyebrow">E12 · 50 runs</div><h2>偵測不到的翻轉是否都會造成錯誤</h2></div>
+  <p>沒有任何保護時，SDC 隨 key 變稀疏而下降，從 1.01×10<sup>−1</sup> 降到 2.4×10<sup>−2</sup>。這個實驗把錯誤答案分成三類，找出下降來自哪一類。</p>
+  <figure class="narrow">
+    <div class="fig-title">無保護時「該找到卻找不到」的次數</div>
+    <div class="fig-sub">每個 run 27,048 次搜尋中的次數</div>
+    <ul class="legend"><li><span class="sw" style="background:var(--s-none)"></span>5 個 seed 的平均</li><li><span class="swdot"></span>單一 seed</li></ul>
+    <div class="plot" id="c-e12"></div>
+    <figcaption>單一 seed 之間差異很大，key 連續時的範圍是 1,435 到 6,229。五個 seed 各自都隨間距變大而下降或持平。</figcaption>
+    <details><summary>資料表</summary><div class="tw"><table>
+      <thead><tr><th>key 間距</th><th class="num">找不到（平均）</th><th class="num">各 seed</th><th class="num">value 錯誤</th><th class="num">不該存在卻找到</th></tr></thead>
+      <tbody>
+        <tr><td class="name">2<sup>0</sup></td><td class="num">2,719.0</td><td class="num">1580 · 1435 · 6229 · 2454 · 1897</td><td class="num">18.2</td><td class="num">0</td></tr>
+        <tr><td class="name">2<sup>8</sup></td><td class="num">1,447.8</td><td class="num">1582 · 1338 · 802 · 2454 · 1063</td><td class="num">19.8</td><td class="num">0</td></tr>
+        <tr><td class="name">2<sup>16</sup></td><td class="num">1,164.8</td><td class="num">1083 · 1106 · 635 · 2454 · 546</td><td class="num">19.4</td><td class="num">0</td></tr>
+        <tr><td class="name">2<sup>24</sup></td><td class="num">877.0</td><td class="num">1082 · 1098 · 559 · 1510 · 136</td><td class="num">20.0</td><td class="num">0</td></tr>
+        <tr><td class="name">2<sup>32</sup></td><td class="num">636.6</td><td class="num">1055 · 785 · 28 · 1283 · 32</td><td class="num">19.2</td><td class="num">0</td></tr>
+      </tbody>
+    </table></div></details>
+  </figure>
+  <ul class="points">
+    <li>下降全部來自「該找到卻找不到」這一類，平均從 2,719 降到 637。</li>
+    <li>「找到但 value 錯誤」固定在 18 到 20 次，來自 values 被翻轉，與 key 分布無關。</li>
+    <li>「不該存在卻找到」在所有間距都是 0。翻轉後的 key 並沒有被誤認成另一個存在的 key。</li>
+  </ul>
+  <p>合理的解釋是：key 稀疏時，separator 的低位元翻轉只讓它在沒有 key 的空隙內移動，沒有任何實際存在的 key 會被導向錯誤的子樹。這與 E11 的結果一致（內部節點偵測不到的位元變多，但殘餘錯誤數沒有增加），不過沒有逐一事件驗證。</p>
+</section>
+
+<section>
+  <div class="sec-head"><div class="eyebrow">E10 · 100 runs</div><h2>分層保護方案 HYBRID 的表現</h2></div>
+  <p>HYBRID 把 CRC 只用在內部節點，葉節點只做結構檢查。它需要的可靠記憶體等於全部內部節點的 CRC 記錄大小。</p>
+  <figure>
+    <div class="fig-title">SDC 隨 key 間距的變化</div>
+    <div class="fig-sub">縱軸為 SDC，單位 ×10<sup>−4</sup>。FULL_CRC 的 SDC 恆為 0，未畫出。</div>
+    <ul class="legend" id="lg-e10"></ul>
+    <div class="plot" id="c-e10"></div>
+    <figcaption>每點為 5 個 seed 的平均。CTRL_CRC 不受 key 間距影響，因為 CRC 不依賴 key 的數值。SANITY 在 2<sup>8</sup> 的值偏高，是因為其中一個 seed 出現 38 個錯誤答案，其餘四個為 19 到 25。</figcaption>
+    <details><summary>資料表</summary><div class="tw"><table>
+      <thead><tr><th>key 間距</th><th class="num">SANITY</th><th class="num">HYBRID</th><th class="num">CTRL_CRC</th><th class="num">HYBRID 補上的差距</th></tr></thead>
+      <tbody>
+        <tr><td class="name">2<sup>0</sup></td><td class="num">7.18e-4</td><td class="num">6.44e-4</td><td class="num">6.07e-4</td><td class="num">67%</td></tr>
+        <tr><td class="name">2<sup>8</sup></td><td class="num">9.25e-4</td><td class="num">7.18e-4</td><td class="num">6.07e-4</td><td class="num">65%</td></tr>
+        <tr><td class="name">2<sup>16</sup></td><td class="num">8.88e-4</td><td class="num">7.99e-4</td><td class="num">6.07e-4</td><td class="num">32%</td></tr>
+        <tr><td class="name">2<sup>24</sup></td><td class="num">9.77e-4</td><td class="num">9.03e-4</td><td class="num">6.07e-4</td><td class="num">20%</td></tr>
+        <tr><td class="name">2<sup>32</sup></td><td class="num">1.06e-3</td><td class="num">9.70e-4</td><td class="num">6.07e-4</td><td class="num">20%</td></tr>
+      </tbody>
+    </table></div></details>
+  </figure>
+  <div class="stats">
+    <div class="stat"><span class="k">HYBRID 的可靠記憶體</span><span class="v">396 B</span><span class="n">33 個內部節點 × 12 B。CTRL_CRC 需要 69,154 B，少 99.4%。</span></div>
+    <div class="stat"><span class="k">補上的 SDC 差距</span><span class="v">67% → 20%</span><span class="n">key 間距 2<sup>0</sup> 到 2<sup>32</sup>，以 SANITY 與 CTRL_CRC 的差距為 100%。</span></div>
+    <div class="stat"><span class="k">HYBRID 的平均延遲</span><span class="v">16.82 µs</span><span class="n">接近 CTRL_CRC 的 17.70 µs，高於 SANITY 的 15.13 µs。</span></div>
+  </div>
+  <figure class="narrow">
+    <div class="fig-title">每次操作的平均延遲</div>
+    <div class="fig-sub">key 間距 2<sup>0</sup>，單位 µs</div>
+    <div class="plot" id="c-lat"></div>
+    <figcaption>樹高為 3，每次搜尋讀取兩個內部節點與一個葉節點。HYBRID 在兩個內部節點上都要計算 CRC，所以延遲接近 CTRL_CRC。</figcaption>
+  </figure>
+  <ul class="points">
+    <li><b>記憶體與 key 密集時的 SDC 符合預期。</b>HYBRID 用 CTRL_CRC 的 0.6% 記憶體取得它三分之二的改善。</li>
+    <li><b>key 稀疏時不符合預期。</b>稀疏 key 增加的 SDC 來自葉節點的 key 陣列，而 HYBRID 在葉節點只有結構檢查。</li>
+    <li><b>延遲不符合預期。</b>省下的只有葉節點那一次 CRC 計算。</li>
+    <li><b>效果量很小。</b>每個 run 相差 2 到 3 個錯誤答案。HYBRID 不高於 SANITY 在 25 組配對中成立 25 次（21 次較低、4 次相同）。</li>
+  </ul>
+</section>
+
+<section>
+  <div class="sec-head"><div class="eyebrow">E8 · 100 runs</div><h2>公式在真實的 key 分布下是否成立</h2></div>
+  <p>固定間距是人工設定。這個實驗改用三類較接近實際資料的分布，並在每個 run 依實際的 key 集合算出公式預測值，再與實測比較。</p>
+  <div class="tw"><table>
+    <thead><tr><th>分布</th><th>說明</th></tr></thead>
+    <tbody>
+      <tr><td class="name">clustered</td><td>1,000 個群，每群 1,000 個連號 key，群與群相距 2<sup>32</sup>。類似多租戶的 ID 空間</td></tr>
+      <tr><td class="name">geomgap 2<sup>k</sup></td><td>相鄰 key 的間距服從幾何分布，平均為 2<sup>k</sup>。平均與固定間距相同，但間距大小不一</td></tr>
+      <tr><td class="name">random64</td><td>均勻隨機的 64 位元 key。類似雜湊值或 UUID</td></tr>
+    </tbody>
+  </table></div>
+  <figure class="narrow">
+    <div class="fig-title">結構檢查相對於 CTRL_CRC 的偵測比例</div>
+    <div class="fig-sub">結構檢查的偵測次數 ÷ CTRL_CRC 的偵測次數</div>
+    <ul class="legend"><li><span class="sw" style="background:var(--s-sanity)"></span>實測</li><li><span class="swtick"></span>公式預測</li></ul>
+    <div class="plot" id="c-e8"></div>
+    <figcaption>公式對每個 key 依它與左右鄰居的實際距離計算可偵測的位元數，再對全部 key 取平均。</figcaption>
+    <details><summary>資料表</summary><div class="tw"><table>
+      <thead><tr><th>分布</th><th class="num">實測比例</th><th class="num">公式預測</th><th class="num">SANITY SDC</th><th class="num">CTRL_CRC SDC</th></tr></thead>
+      <tbody>
+        <tr><td class="name">clustered</td><td class="num">0.980</td><td class="num">1.000</td><td class="num">7.40e-4</td><td class="num">6.07e-4</td></tr>
+        <tr><td class="name">geomgap 2<sup>8</sup></td><td class="num">0.865</td><td class="num">0.880</td><td class="num">9.92e-4</td><td class="num">6.07e-4</td></tr>
+        <tr><td class="name">geomgap 2<sup>16</sup></td><td class="num">0.750</td><td class="num">0.755</td><td class="num">8.73e-4</td><td class="num">6.07e-4</td></tr>
+        <tr><td class="name">geomgap 2<sup>24</sup></td><td class="num">0.632</td><td class="num">0.630</td><td class="num">9.62e-4</td><td class="num">6.07e-4</td></tr>
+        <tr><td class="name">random64</td><td class="num">0.338</td><td class="num">0.332</td><td class="num">1.24e-3</td><td class="num">6.07e-4</td></tr>
+      </tbody>
+    </table></div></details>
+  </figure>
+  <ul class="points">
+    <li>公式在五種分布上的誤差都不超過 2 個百分點。</li>
+    <li>決定偵測比例的是平均間距。geomgap 與同平均的固定間距相差不到 0.6 個百分點。</li>
+    <li>雜湊型 key 是最差情況。結構檢查只偵測到 CTRL_CRC 的三分之一，SDC 是它的兩倍。</li>
+    <li>群集型 key 與連續 key 幾乎相同，因為大部分 key 的鄰居距離是 1。</li>
+  </ul>
+</section>
+
+<section>
+  <div class="sec-head"><div class="eyebrow">E9 · 144 runs</div><h2>扇出改變時規律是否成立</h2></div>
+  <p>前面的實驗都使用 order 253。這個實驗在 200,000 個 key 下比較 order 16、64、253。</p>
+  <figure class="narrow">
+    <div class="fig-title">結構檢查相對於 CTRL_CRC 的偵測比例</div>
+    <div class="fig-sub">依 order 分組，橫軸為 key 間距</div>
+    <ul class="legend" id="lg-e9"></ul>
+    <div class="plot" id="c-e9"></div>
+    <figcaption>每點為 3 個 seed 的平均。</figcaption>
+    <details><summary>資料表</summary><div class="tw"><table>
+      <thead><tr><th>key 間距</th><th class="num">公式</th><th class="num">order 253</th><th class="num">order 64</th><th class="num">order 16</th></tr></thead>
+      <tbody>
+        <tr><td class="name">2<sup>0</sup></td><td class="num">1.000</td><td class="num">0.980</td><td class="num">0.937</td><td class="num">0.779</td></tr>
+        <tr><td class="name">2<sup>8</sup></td><td class="num">0.875</td><td class="num">0.840</td><td class="num">0.805</td><td class="num">0.696</td></tr>
+        <tr><td class="name">2<sup>16</sup></td><td class="num">0.750</td><td class="num">0.730</td><td class="num">0.706</td><td class="num">0.611</td></tr>
+        <tr><td class="name">2<sup>24</sup></td><td class="num">0.625</td><td class="num">0.616</td><td class="num">0.616</td><td class="num">0.535</td></tr>
+        <tr><td>內部節點數</td><td class="num"></td><td class="num">8</td><td class="num">117</td><td class="num">1,661</td></tr>
+        <tr><td>樹高</td><td class="num"></td><td class="num">3</td><td class="num">4</td><td class="num">5</td></tr>
+      </tbody>
+    </table></div></details>
+  </figure>
+  <ul class="points">
+    <li>order 64 與 253 貼近公式，相差 1 到 7 個百分點。</li>
+    <li>order 16 在每個間距都只有公式的約 0.78 倍。可能原因是每個節點只有約 11 個 key，節點首尾的 key 只有一側有鄰居可比較，而且 SSD header 與 child pointers 佔 CTRL_CRC 涵蓋範圍的比例較高。這點尚未驗證。</li>
+  </ul>
+</section>
+
+<section>
+  <div class="sec-head"><div class="eyebrow">E13 · 270 runs</div><h2>插入 dummy key 能否補回偵測範圍</h2></div>
+  <p>結構檢查看不到的翻轉，是 key 在空隙內移動而沒有越過鄰居。如果在真 key 旁邊緊貼著放一個不存放資料的 dummy key，真 key 一移動就會越過它，遞增順序被破壞，結構檢查就會報錯。這個做法不需要可靠記憶體，也不需要計算 CRC。</p>
+  <figure>
+    <div class="fig-title">dummy key 讓原本看不到的翻轉變成順序錯誤</div>
+    <div class="fig-sub">真 key 32 的右側放一個 dummy key 33</div>
+    <div class="diagram">
+      <svg viewBox="0 0 560 150" role="img" aria-label="數線示意：key 32 翻轉 bit 2 變成 36，越過 dummy key 33，順序被破壞，被偵測">
+        <defs><marker id="ah2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0L10,5L0,10Z" class="d-head"/></marker></defs>
+        <text x="130" y="16" class="d-t">翻轉 bit 2：32 → 36</text>
+        <text x="130" y="34" class="d-s">越過 dummy key 33，遞增順序被破壞，結構檢查報錯</text>
+        <path d="M224,86 C250,44 350,44 377,86" class="d-arrow" marker-end="url(#ah2)"/>
+        <line x1="40" y1="100" x2="550" y2="100" class="d-line"/>
+        <line x1="60" y1="94" x2="60" y2="106" class="d-line"/><line x1="220" y1="94" x2="220" y2="106" class="d-line"/><line x1="260" y1="94" x2="260" y2="106" class="d-line"/><line x1="380" y1="94" x2="380" y2="106" class="d-line"/><line x1="540" y1="94" x2="540" y2="106" class="d-line"/>
+        <circle cx="220" cy="100" r="6" class="d-key"/>
+        <rect x="254" y="94" width="12" height="12" rx="1.5" class="d-dummy"/>
+        <circle cx="380" cy="100" r="5" class="d-new"/>
+        <text x="60" y="128" text-anchor="middle" class="d-n">28</text><text x="220" y="128" text-anchor="middle" class="d-n">32</text><text x="260" y="128" text-anchor="middle" class="d-n">33</text><text x="380" y="128" text-anchor="middle" class="d-n">36</text><text x="540" y="128" text-anchor="middle" class="d-n">40</text>
+        <text x="260" y="144" text-anchor="middle" class="d-s">dummy</text>
+      </svg>
+    </div>
+    <figcaption>實心圓是真 key，方塊是 dummy key，空心圓是翻轉後的值。沒有 dummy key 時，36 仍落在 16 與 48 之間，不會被發現。</figcaption>
+  </figure>
+  <p>實驗把 dummy key 當成一般的 key 插入樹中，value 填入保留值，搜尋到 dummy key 視為找不到。比較四種放法：不放、只放右側 K+1、只放左側 K−1、兩側都放。另外加一組對照，把 dummy key 放在空隙正中間，樹同樣變大，但 key 旁邊沒有緊鄰的鄰居。</p>
+  <figure>
+    <div class="fig-title">結構檢查抓到的真 key 翻轉比例</div>
+    <div class="fig-sub">結構檢查對真 key 的偵測次數 ÷ 相同配置下 CTRL_CRC 的偵測次數</div>
+    <ul class="legend"><li><span class="sw" style="background:var(--s-sanity)"></span>實測</li><li><span class="swtick"></span>離線模型預測</li></ul>
+    <div class="duo">
+      <div class="bitpanel"><div class="bp-t">key 間距 2<sup>32</sup></div><div class="plot" id="c-e13a"></div></div>
+      <div class="bitpanel"><div class="bp-t">random64</div><div class="plot" id="c-e13b"></div></div>
+    </div>
+    <figcaption>離線模型對每個真 key 逐一翻轉 64 個位元，計算順序是否被破壞。實測比模型低 1 到 3.5 個百分點，沒有 dummy key 的情況也是如此。</figcaption>
+    <details><summary>資料表</summary><div class="tw"><table>
+      <thead><tr><th>key 分布</th><th class="num">不放</th><th class="num">右側</th><th class="num">左側</th><th class="num">兩側</th><th class="num">對照組</th></tr></thead>
+      <tbody>
+        <tr><td class="name">2<sup>8</sup></td><td class="num">0.849 (0.870)</td><td class="num">0.988 (0.999)</td><td class="num">0.860 (0.866)</td><td class="num">0.986 (1.000)</td><td class="num">0.874 (0.889)</td></tr>
+        <tr><td class="name">2<sup>16</sup></td><td class="num">0.722 (0.746)</td><td class="num">0.984 (0.999)</td><td class="num">0.727 (0.743)</td><td class="num">0.981 (1.000)</td><td class="num">0.745 (0.764)</td></tr>
+        <tr><td class="name">2<sup>32</sup></td><td class="num">0.468 (0.497)</td><td class="num">0.976 (0.999)</td><td class="num">0.474 (0.496)</td><td class="num">0.969 (1.000)</td><td class="num">0.490 (0.514)</td></tr>
+        <tr><td class="name">random64</td><td class="num">0.298 (0.333)</td><td class="num">0.635 (0.666)</td><td class="num">0.635 (0.665)</td><td class="num">0.975 (1.000)</td><td class="num">未測</td></tr>
+      </tbody>
+    </table></div><p class="fig-sub">括號內為離線模型的預測值。</p></details>
+  </figure>
+  <ul class="points">
+    <li>兩側都放時，結構檢查抓到 97% 以上的真 key 翻轉。</li>
+    <li>固定間距的 key 只放右側就夠，只放左側沒有效果。這種 key 的低位元全是 0，翻轉只會讓 key 變大。</li>
+    <li>random64 的位元是隨機的，單側各補回一半，兩側都放才完整。</li>
+    <li>對照組只多 2 個百分點，表示效果來自緊鄰的鄰居，不是來自樹變大。</li>
+    <li>把 dummy key 平均放在空隙裡，數量每加倍只多偵測 1 個位元，也就是 1.6 個百分點。低位元翻轉只讓 key 移動一點點，只有緊鄰的鄰居才會被撞到。</li>
+  </ul>
+  <figure>
+    <div class="fig-title">每個 run 未偵測的錯誤答案數</div>
+    <div class="fig-sub">key 間距 2<sup>32</sup>，約 27,000 次搜尋，5 個 seed 的平均</div>
+    <ul class="legend"><li><span class="sw" style="background:var(--e-miss)"></span>該找到卻找不到</li><li><span class="sw" style="background:var(--e-val)"></span>找到但 value 錯誤</li></ul>
+    <div class="plot" id="c-e13c"></div>
+    <figcaption>SANITY 兩側的平均值包含一個出現 135 個錯誤答案的 seed，其餘四個 seed 為 21 到 37，中位數是 37。</figcaption>
+    <details><summary>資料表</summary><div class="tw"><table>
+      <thead><tr><th>key 分布</th><th>方案</th><th>dummy key</th><th class="num">頁數</th><th class="num">內部節點</th><th class="num">找不到</th><th class="num">value 錯誤</th><th class="num">合計</th><th class="num">延遲 µs</th></tr></thead>
+      <tbody>
+        <tr><td class="name">2<sup>32</sup></td><td class="name">SANITY</td><td>不放</td><td class="num">5,762</td><td class="num">33</td><td class="num">10.2</td><td class="num">18.4</td><td class="num">28.6</td><td class="num">12.97</td></tr>
+        <tr><td class="name">2<sup>32</sup></td><td class="name">SANITY</td><td>對照組</td><td class="num">11,519</td><td class="num">65</td><td class="num">14.8</td><td class="num">23.2</td><td class="num">38.0</td><td class="num">24.48</td></tr>
+        <tr><td class="name">2<sup>32</sup></td><td class="name">SANITY</td><td>右側</td><td class="num">11,519</td><td class="num">65</td><td class="num">7.2</td><td class="num">22.4</td><td class="num">29.6</td><td class="num">26.04</td></tr>
+        <tr><td class="name">2<sup>32</sup></td><td class="name">SANITY</td><td>兩側</td><td class="num">16,970</td><td class="num">110</td><td class="num">30.4</td><td class="num">20.8</td><td class="num">51.2</td><td class="num">36.79</td></tr>
+        <tr><td class="name">2<sup>32</sup></td><td class="name">HYBRID</td><td>不放</td><td class="num">5,762</td><td class="num">33</td><td class="num">7.8</td><td class="num">18.4</td><td class="num">26.2</td><td class="num">14.68</td></tr>
+        <tr><td class="name">2<sup>32</sup></td><td class="name">HYBRID</td><td>右側</td><td class="num">11,519</td><td class="num">65</td><td class="num">0.6</td><td class="num">22.4</td><td class="num">23.0</td><td class="num">28.23</td></tr>
+        <tr><td class="name">2<sup>32</sup></td><td class="name">HYBRID</td><td>兩側</td><td class="num">16,970</td><td class="num">110</td><td class="num">1.4</td><td class="num">20.8</td><td class="num">22.2</td><td class="num">39.47</td></tr>
+        <tr><td class="name">2<sup>32</sup></td><td class="name">CTRL_CRC</td><td>不放</td><td class="num">5,762</td><td class="num">33</td><td class="num">0</td><td class="num">16.4</td><td class="num">16.4</td><td class="num">17.70</td></tr>
+        <tr><td class="name">2<sup>32</sup></td><td class="name">CTRL_CRC</td><td>右側</td><td class="num">11,519</td><td class="num">65</td><td class="num">0</td><td class="num">21.6</td><td class="num">21.6</td><td class="num">30.80</td></tr>
+        <tr><td class="name">2<sup>32</sup></td><td class="name">CTRL_CRC</td><td>兩側</td><td class="num">16,970</td><td class="num">110</td><td class="num">0</td><td class="num">19.6</td><td class="num">19.6</td><td class="num">43.25</td></tr>
+        <tr><td class="name">random64</td><td class="name">SANITY</td><td>不放</td><td class="num">5,762</td><td class="num">33</td><td class="num">14.8</td><td class="num">18.8</td><td class="num">33.6</td><td class="num">12.20</td></tr>
+        <tr><td class="name">random64</td><td class="name">SANITY</td><td>兩側</td><td class="num">16,974</td><td class="num">111</td><td class="num">30.0</td><td class="num">18.2</td><td class="num">48.2</td><td class="num">37.67</td></tr>
+        <tr><td class="name">random64</td><td class="name">HYBRID</td><td>不放</td><td class="num">5,762</td><td class="num">33</td><td class="num">12.0</td><td class="num">18.8</td><td class="num">30.8</td><td class="num">13.91</td></tr>
+        <tr><td class="name">random64</td><td class="name">HYBRID</td><td>右側</td><td class="num">11,519</td><td class="num">65</td><td class="num">5.8</td><td class="num">22.8</td><td class="num">28.6</td><td class="num">27.72</td></tr>
+        <tr><td class="name">random64</td><td class="name">HYBRID</td><td>兩側</td><td class="num">16,974</td><td class="num">111</td><td class="num">1.2</td><td class="num">18.0</td><td class="num">19.2</td><td class="num">40.37</td></tr>
+        <tr><td class="name">random64</td><td class="name">CTRL_CRC</td><td>不放</td><td class="num">5,762</td><td class="num">33</td><td class="num">0</td><td class="num">16.4</td><td class="num">16.4</td><td class="num">17.73</td></tr>
+        <tr><td class="name">random64</td><td class="name">CTRL_CRC</td><td>兩側</td><td class="num">16,974</td><td class="num">111</td><td class="num">0</td><td class="num">17.0</td><td class="num">17.0</td><td class="num">43.35</td></tr>
+      </tbody>
+    </table></div></details>
+  </figure>
+  <div class="stats">
+    <div class="stat"><span class="k">葉節點頁數</span><span class="v">2 到 3 倍</span><span class="n">單側 11,519 頁，兩側 16,970 頁。內部節點由 33 個變為 65 與 110 個。</span></div>
+    <div class="stat"><span class="k">右側 dummy 相對於對照組</span><span class="v">少 8.4 個</span><span class="n">樹大小相同時的比較。95% 信賴區間 4.8 到 13.0，五個 seed 都減少。</span></div>
+    <div class="stat"><span class="k">HYBRID 的「找不到」</span><span class="v">7.8 → 0.6</span><span class="n">內部節點有 CRC 時，葉節點 key 造成的錯誤幾乎消失。</span></div>
+  </div>
+  <ul class="points">
+    <li><b>樹大小相同時，dummy key 有效。</b>右側 dummy 比對照組每個 run 少 8.4 個錯誤答案，幾乎全部來自「找不到」。</li>
+    <li><b>和原本的樹相比，只用結構檢查時沒有變好。</b>合計由 28.6 變為 29.6 與 51.2。每頁的翻轉率固定，樹變大後翻轉總數等比增加，內部節點也變多，而結構檢查在內部節點上有偵測不到的位元。</li>
+    <li><b>value 錯誤也隨樹變大而增加。</b>CTRL_CRC 同樣由 16.4 升到 21.6。推測原因是每頁被讀到的次數變少，偵測到翻轉後整頁重新載入的機會也變少。這點沒有逐一事件驗證。</li>
+    <li><b>成本高。</b>頁數與平均延遲都變成 2 到 3 倍。每次插入要多寫入 dummy key，重新載入的次數也隨翻轉總數增加。</li>
+  </ul>
+</section>
+
+<section>
+  <div class="sec-head"><div class="eyebrow">E16 · 30 runs</div><h2>把 CRC 存在頁面內</h2></div>
+  <p>CTRL_CRC 與 FULL_CRC 把每個節點的 CRC 存在可靠記憶體。另一種做法是把 CRC 直接寫在頁面最後 4 bytes，讀取時重新計算並比對。這 4 bytes 本身也可能被翻轉，結果是比對不符，頁面從 SSD 重新載入，不會造成錯誤答案。</p>
+  <figure>
+    <div class="fig-title">頁內 CRC 的位置與涵蓋範圍</div>
+    <div class="fig-sub">以葉節點為例，各區塊寬度未按比例</div>
+    <div class="diagram">
+      <svg viewBox="0 0 560 128" role="img" aria-label="頁面配置示意：SSD header、node header、keys、values、未使用空間，最後 4 bytes 存放 CRC。控制區版涵蓋到 keys，整頁版涵蓋到未使用空間">
+        <rect x="20" y="24" width="84" height="36" class="d-box"/><rect x="104" y="24" width="88" height="36" class="d-box"/><rect x="192" y="24" width="110" height="36" class="d-box"/><rect x="302" y="24" width="110" height="36" class="d-box"/><rect x="412" y="24" width="84" height="36" class="d-free"/><rect x="496" y="24" width="44" height="36" class="d-crc"/>
+        <text x="62" y="46" text-anchor="middle" class="d-n">SSD header</text><text x="148" y="46" text-anchor="middle" class="d-n">node header</text><text x="247" y="46" text-anchor="middle" class="d-n">keys</text><text x="357" y="46" text-anchor="middle" class="d-n">values</text><text x="454" y="46" text-anchor="middle" class="d-n">未使用</text><text x="518" y="46" text-anchor="middle" class="d-on">CRC</text>
+        <text x="518" y="16" text-anchor="middle" class="d-s">4 bytes</text>
+        <path d="M20,72 V78 H302 V72" fill="none" class="d-line"/><text x="161" y="94" text-anchor="middle" class="d-s">INPAGE_CTRL 的涵蓋範圍</text>
+        <path d="M20,104 V110 H496 V104" fill="none" class="d-line"/><text x="258" y="125" text-anchor="middle" class="d-s">INPAGE_FULL 的涵蓋範圍</text>
+      </svg>
+    </div>
+    <figcaption>內部節點沒有 values，child pointers 也在 INPAGE_CTRL 的涵蓋範圍內。order 253 的節點最多使用 4,088 bytes，頁面最後 4 bytes 一定是空的。</figcaption>
+  </figure>
+  <div class="tw"><table>
+    <thead><tr><th>方案</th><th>CRC 存放位置</th><th class="num">SDC</th><th class="num">平均延遲 µs</th><th class="num">可靠記憶體</th></tr></thead>
+    <tbody>
+      <tr><td class="name">SANITY</td><td>無 CRC</td><td class="num">7.18e-4</td><td class="num">15.13</td><td class="num">0 B</td></tr>
+      <tr><td class="name">HYBRID</td><td>可靠記憶體，僅內部節點</td><td class="num">6.44e-4</td><td class="num">16.82</td><td class="num">396 B</td></tr>
+      <tr><td class="name">CTRL_CRC</td><td>可靠記憶體</td><td class="num">6.07e-4</td><td class="num">17.70</td><td class="num">69,153 B</td></tr>
+      <tr><td class="name"><b>INPAGE_CTRL</b></td><td>頁面內</td><td class="num"><b>6.07e-4</b></td><td class="num"><b>17.64</b></td><td class="num"><b>0 B</b></td></tr>
+      <tr><td class="name">FULL_CRC</td><td>可靠記憶體</td><td class="num">0</td><td class="num">28.56</td><td class="num">69,153 B</td></tr>
+      <tr><td class="name"><b>INPAGE_FULL</b></td><td>頁面內</td><td class="num"><b>0</b></td><td class="num"><b>28.49</b></td><td class="num"><b>0 B</b></td></tr>
+    </tbody>
+  </table></div>
+  <p class="fig-sub">key 間距 2<sup>0</sup>。key 間距 2<sup>32</sup> 與 random64 下，兩個頁內 CRC 方案的 SDC 相同，因為 CRC 與 key 的數值無關。</p>
+  <div class="stats">
+    <div class="stat"><span class="k">錯誤答案數逐 seed 相同</span><span class="v">30 / 30</span><span class="n">INPAGE_CTRL 對 CTRL_CRC，INPAGE_FULL 對 FULL_CRC。</span></div>
+    <div class="stat"><span class="k">可靠記憶體</span><span class="v">0 B</span><span class="n">存在可靠記憶體的版本需要 69,153 B。</span></div>
+    <div class="stat"><span class="k">額外的重新載入</span><span class="v">每 run 2 到 3 次</span><span class="n">推測是翻轉落在那 4 bytes 的 CRC 上，沒有另外計數。</span></div>
+  </div>
+  <ul class="points">
+    <li>在單一位元翻轉、只發生在 DRAM 的錯誤模型下，CRC 存在頁面內與存在可靠記憶體的偵測結果相同。</li>
+    <li>延遲幾乎相同，差別只有少一次可靠記憶體的存取。CRC 的計算時間仍然要付。</li>
+    <li>node header 的 key 數量被翻轉時，CRC 的涵蓋範圍會跟著改變，比對仍然不符。自我測試確認 32 種單一位元翻轉全部被抓到。</li>
+  </ul>
+</section>
+
+<section>
+  <div class="sec-head"><div class="eyebrow">E17–E20 · 217 runs</div><h2>只用結構檢查能補回多少</h2></div>
+  <p>這一組實驗不使用 CRC，也不使用可靠記憶體，只在結構檢查上增加規則，或利用節點內沒用到的空間。對照組是原本的結構檢查 SANITY。</p>
+  <div class="tw"><table>
+    <thead><tr><th>做法</th><th>檢查內容</th><th>額外儲存</th><th>適用的 key</th></tr></thead>
+    <tbody>
+      <tr><td>父子範圍檢查</td><td>父節點的分隔點已經界定子節點的 key 範圍，讀到子節點時比對。葉節點的第一個 key 必須等於分隔點</td><td>無</td><td>全部</td></tr>
+      <tr><td>對齊檢查</td><td>key 固定是 2<sup>k</sup> 的倍數時，低 k 個位元必須是 0</td><td>無</td><td>有固定規律的 key</td></tr>
+      <tr><td>空槽 dummy key</td><td>節點平均只裝 69%，把 dummy key 填進沒用到的槽位，緊貼在真 key 右側</td><td>無，頁數不變</td><td>全部</td></tr>
+    </tbody>
+  </table></div>
+  <figure>
+    <div class="fig-title">父子範圍檢查</div>
+    <div class="fig-sub">父節點的分隔點是 300 與 400，中間的子節點只能存放 300 到 399</div>
+    <div class="diagram">
+      <svg viewBox="0 0 560 150" role="img" aria-label="父節點分隔點 300 與 400，指向的子節點 key 必須落在 300 到 399，且第一個 key 等於 300">
+        <defs><marker id="ah3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0L10,5L0,10Z" class="d-head"/></marker></defs>
+        <text x="20" y="30" class="d-s">父節點</text>
+        <rect x="90" y="10" width="70" height="32" class="d-free"/><rect x="160" y="10" width="70" height="32" class="d-box"/><rect x="230" y="10" width="70" height="32" class="d-box"/><rect x="300" y="10" width="70" height="32" class="d-free"/>
+        <text x="125" y="31" text-anchor="middle" class="d-n">…</text><text x="195" y="31" text-anchor="middle" class="d-n">300</text><text x="265" y="31" text-anchor="middle" class="d-n">400</text><text x="335" y="31" text-anchor="middle" class="d-n">…</text>
+        <path d="M230,42 L230,84" class="d-arrow" marker-end="url(#ah3)"/>
+        <text x="20" y="110" class="d-s">子節點</text>
+        <rect x="90" y="90" width="70" height="32" class="d-box"/><rect x="160" y="90" width="70" height="32" class="d-box"/><rect x="230" y="90" width="70" height="32" class="d-box"/><rect x="300" y="90" width="70" height="32" class="d-box"/>
+        <text x="125" y="111" text-anchor="middle" class="d-n">300</text><text x="195" y="111" text-anchor="middle" class="d-n">320</text><text x="265" y="111" text-anchor="middle" class="d-n">350</text><text x="335" y="111" text-anchor="middle" class="d-n">390</text>
+        <text x="386" y="104" class="d-s">第一個 key 必須等於 300</text>
+        <text x="386" y="122" class="d-s">所有 key 必須小於 400</text>
+        <text x="90" y="144" class="d-s">分隔點或子節點任何一邊被翻轉，兩者就對不上</text>
+      </svg>
+    </div>
+    <figcaption>分隔點是從葉節點複製上來的，所以父節點與子節點各有一份相同的 key，可以互相驗證。</figcaption>
+  </figure>
+  <figure>
+    <div class="fig-title">每個 run 未偵測的錯誤答案數</div>
+    <div class="fig-sub">約 27,000 次搜尋，5 個 seed 的平均，頁數全部維持 5,762 頁</div>
+    <ul class="legend"><li><span class="sw" style="background:var(--e-miss)"></span>該找到卻找不到</li><li><span class="sw" style="background:var(--e-val)"></span>找到但 value 錯誤</li></ul>
+    <div class="plot" id="c-e20"></div>
+    <figcaption>「範圍＋空槽」是範圍檢查加空槽 dummy key。「三項全開」再加上對齊檢查。value 沒有順序可言，任何結構檢查都抓不到 value 錯誤。</figcaption>
+    <details><summary>資料表</summary><div class="tw"><table>
+      <thead><tr><th>key</th><th>做法</th><th class="num">找不到</th><th class="num">value 錯誤</th><th class="num">合計</th><th class="num">延遲 µs</th><th class="num">與 SANITY 的差，95% 信賴區間</th></tr></thead>
+      <tbody>
+        <tr><td class="name">連號</td><td>SANITY</td><td class="num">2.0</td><td class="num">17.4</td><td class="num">19.4</td><td class="num">15.13</td><td class="num"></td></tr>
+        <tr><td class="name">連號</td><td>範圍檢查</td><td class="num">0.0</td><td class="num">17.0</td><td class="num">17.0</td><td class="num">15.19</td><td class="num">2.4 [0.8, 3.8]</td></tr>
+        <tr><td class="name">2<sup>32</sup></td><td>SANITY</td><td class="num">10.2</td><td class="num">18.4</td><td class="num">28.6</td><td class="num">12.97</td><td class="num"></td></tr>
+        <tr><td class="name">2<sup>32</sup></td><td>範圍檢查</td><td class="num">7.8</td><td class="num">18.2</td><td class="num">26.0</td><td class="num">13.06</td><td class="num">2.6 [1.6, 3.8]</td></tr>
+        <tr><td class="name">2<sup>32</sup></td><td>空槽 dummy key</td><td class="num">8.0</td><td class="num">18.4</td><td class="num">26.4</td><td class="num">14.76</td><td class="num">2.2 [−2.8, 8.4]</td></tr>
+        <tr><td class="name">2<sup>32</sup></td><td>對齊檢查</td><td class="num">2.2</td><td class="num">17.0</td><td class="num">19.2</td><td class="num">15.15</td><td class="num">9.4 [6.8, 12.8]</td></tr>
+        <tr><td class="name">2<sup>32</sup></td><td>範圍＋空槽</td><td class="num">5.6</td><td class="num">18.4</td><td class="num">24.0</td><td class="num">14.83</td><td class="num">4.6 [−1.2, 12.0]</td></tr>
+        <tr><td class="name">2<sup>32</sup></td><td>三項全開</td><td class="num">0.0</td><td class="num">15.2</td><td class="num">15.2</td><td class="num">18.52</td><td class="num">13.4 [8.8, 18.6]</td></tr>
+        <tr><td class="name">random64</td><td>SANITY</td><td class="num">14.8</td><td class="num">18.8</td><td class="num">33.6</td><td class="num">12.20</td><td class="num"></td></tr>
+        <tr><td class="name">random64</td><td>範圍檢查</td><td class="num">12.0</td><td class="num">18.6</td><td class="num">30.6</td><td class="num">12.30</td><td class="num">3.0 [1.8, 4.2]</td></tr>
+        <tr><td class="name">random64</td><td>空槽 dummy key</td><td class="num">12.4</td><td class="num">19.6</td><td class="num">32.0</td><td class="num">14.05</td><td class="num">1.6 [−3.4, 9.2]</td></tr>
+        <tr><td class="name">random64</td><td>範圍＋空槽</td><td class="num">9.8</td><td class="num">19.6</td><td class="num">29.4</td><td class="num">14.13</td><td class="num">4.2 [−1.2, 12.2]</td></tr>
+      </tbody>
+    </table></div></details>
+  </figure>
+  <div class="stats">
+    <div class="stat"><span class="k">只翻轉內部節點時的錯誤答案</span><span class="v">23–32 → 0–1</span><span class="n">加上範圍檢查後的中位數，四種 key 分布皆然。延遲多 0.1 µs。</span></div>
+    <div class="stat"><span class="k">對齊檢查，key 間距 2<sup>32</sup></span><span class="v">10.2 → 2.2</span><span class="n">「找不到」回到連號 key 的水準。葉節點 key 的偵測比例由 0.468 升到 0.996。</span></div>
+    <div class="stat"><span class="k">三項全開，有規律的 key</span><span class="v">0 / 10</span><span class="n">10 個 run 中沒有任何一個出現「找不到」。</span></div>
+  </div>
+  <ul class="points">
+    <li><b>範圍檢查補的是內部節點。</b>每個 run 減少 2.4 到 3.0 個「找不到」，四種 key 分布都顯著。只翻轉葉節點時沒有差別。</li>
+    <li><b>對齊檢查補的是葉節點，但只適用於有規律的 key。</b>結果與直接把 key 換算成連號相同。</li>
+    <li><b>空槽 dummy key 的端到端效果不顯著。</b>偵測比例由 0.468 升到 0.692，但空槽只夠讓 45% 的 key 有 dummy，差異落在 5 個 seed 的誤差範圍內。</li>
+    <li><b>無規律的 key 沒有免費的解法。</b>範圍檢查加空槽 dummy key 把「找不到」由 14.8 降到 9.8，信賴區間包含 0。</li>
+    <li><b>三項全開的延遲較高</b>，為 18.52 µs。原因是抓到的翻轉變多，重新載入的次數由約 900 次增為約 3,000 次。</li>
+    <li><b>節點較小時範圍檢查的效果更大。</b>order 16、key 連號時，「找不到」由 12.3 降到 0.3。</li>
+  </ul>
+</section>
+
+<section>
+  <div class="sec-head"><div class="eyebrow">E21 · 40 runs</div><h2>把 key 映射到密集的範圍</h2></div>
+  <p>另一個方向是改變存進樹裡的 key，讓它們本身就是密集的，結構檢查自然恢復作用。做法依 key 是否有規律而不同。</p>
+  <div class="tw"><table>
+    <thead><tr><th>key 的性質</th><th>映射方式</th><th>代價</th></tr></thead>
+    <tbody>
+      <tr><td>固定間距 2<sup>k</sup></td><td>存入 key 除以 2<sup>k</sup> 的結果，變成連號</td><td>無，順序保留</td></tr>
+      <tr><td>無規律</td><td>以 hash 把每個 key 分配到一個小範圍內的格子，樹的 key 用格子編號。撞號時往下一格找</td><td>要另存原本的 key，頁數約 2 倍，無法再依 key 的順序掃描</td></tr>
+    </tbody>
+  </table></div>
+  <p>無規律的 key 塞進小範圍一定會撞號，所以每個 key 佔兩筆相鄰的資料，一筆存原本的 key，一筆存 value。查詢時把存著的原 key 重新 hash 一次，位置對不上就表示它被翻轉了。這個驗證只多一次 hash 計算。</p>
+  <figure>
+    <div class="fig-title">每個 run 未偵測的錯誤答案數</div>
+    <div class="fig-sub">約 27,000 次搜尋，5 個 seed 的平均，全部使用 SANITY</div>
+    <ul class="legend"><li><span class="sw" style="background:var(--e-miss)"></span>該找到卻找不到</li><li><span class="sw" style="background:var(--e-val)"></span>找到但 value 錯誤</li></ul>
+    <div class="plot" id="c-e21"></div>
+    <figcaption>hash 後的倍數是格子總數相對於 key 數量的比例。「兩倍大的對照」是把 random64 原樣存放並加上右側 dummy key，樹的大小與 hash 映射相同。</figcaption>
+    <details><summary>資料表</summary><div class="tw"><table>
+      <thead><tr><th>key</th><th>做法</th><th class="num">找不到</th><th class="num">value 錯誤</th><th class="num">合計</th><th class="num">頁數</th><th class="num">延遲 µs</th><th class="num">命中時找幾格</th><th class="num">落空時找幾格</th></tr></thead>
+      <tbody>
+        <tr><td class="name">2<sup>32</sup></td><td>原樣</td><td class="num">10.2</td><td class="num">18.4</td><td class="num">28.6</td><td class="num">5,762</td><td class="num">12.97</td><td class="num">1</td><td class="num">1</td></tr>
+        <tr><td class="name">2<sup>32</sup></td><td>換算成連號</td><td class="num">2.0</td><td class="num">17.4</td><td class="num">19.4</td><td class="num">5,762</td><td class="num">15.13</td><td class="num">1</td><td class="num">1</td></tr>
+        <tr><td class="name">random64</td><td>原樣</td><td class="num">14.8</td><td class="num">18.8</td><td class="num">33.6</td><td class="num">5,762</td><td class="num">12.20</td><td class="num">1</td><td class="num">1</td></tr>
+        <tr><td class="name">random64</td><td>兩倍大的對照</td><td class="num">12.6</td><td class="num">22.8</td><td class="num">35.4</td><td class="num">11,519</td><td class="num">25.53</td><td class="num">1</td><td class="num">1</td></tr>
+        <tr><td class="name">random64</td><td>hash 映射，範圍 4 倍</td><td class="num">4.6</td><td class="num">18.0</td><td class="num">22.6</td><td class="num">11,504</td><td class="num">28.21</td><td class="num">1.17</td><td class="num">1.40</td></tr>
+        <tr><td class="name">random64</td><td>hash 映射，範圍 2 倍</td><td class="num">4.6</td><td class="num">21.4</td><td class="num">26.0</td><td class="num">11,493</td><td class="num">28.55</td><td class="num">1.50</td><td class="num">2.57</td></tr>
+        <tr><td class="name">random64</td><td>hash 映射，範圍 1.33 倍</td><td class="num">3.4</td><td class="num">18.0</td><td class="num">21.4</td><td class="num">11,521</td><td class="num">29.42</td><td class="num">2.50</td><td class="num">8.18</td></tr>
+      </tbody>
+    </table></div></details>
+  </figure>
+  <ul class="points">
+    <li><b>有規律的 key 換算成連號，效果最好而且免費。</b>結果與原本就是連號的 key 逐欄相同。延遲略高是因為抓到並修復的翻轉變多。</li>
+    <li><b>hash 映射讓無規律 key 的「找不到」減少七成以上。</b>由 14.8 降到 3.4 至 4.6。與同樣兩倍大的對照相比也顯著，所以不是樹變大造成的。</li>
+    <li><b>代價是頁數 2 倍、延遲約 2.3 倍。</b>每個 key 多存一筆原 key，撞號時要多找幾格，自我驗證每個 run 觸發約 1,600 到 2,100 次重新載入。</li>
+    <li><b>範圍取多小沒有可分辨的差別。</b>三種設定的差異在 seed 的誤差範圍內。查詢要找的格數與離線試算一致。</li>
+    <li><b>hash 映射必須搭配結構檢查。</b>完全沒有檢查時，錯誤答案由 98.8 個增加到 1,100 個以上。</li>
+  </ul>
+  <h3>只用結構檢查時的選擇</h3>
+  <div class="tw"><table>
+    <thead><tr><th>key 的性質</th><th>做法</th><th class="num">「找不到」</th><th>成本</th></tr></thead>
+    <tbody>
+      <tr><td>任何 key</td><td>加上父子範圍檢查</td><td class="num">少 2.4 到 3.0</td><td>無</td></tr>
+      <tr><td>有固定規律</td><td>對齊檢查，或換算成連號</td><td class="num">10.2 → 2.2</td><td>無</td></tr>
+      <tr><td>有固定規律</td><td>再加範圍檢查與空槽 dummy key</td><td class="num">10.2 → 0</td><td>重新載入次數增加</td></tr>
+      <tr><td>無規律</td><td>範圍檢查加空槽 dummy key</td><td class="num">14.8 → 9.8，不顯著</td><td>無</td></tr>
+      <tr><td>無規律</td><td>hash 映射</td><td class="num">14.8 → 3.4 至 4.6</td><td>頁數 2 倍，延遲 2.3 倍，失去順序掃描</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="sec-head"><div class="eyebrow">結論</div><h2>稀疏 key 下如何使用結構檢查</h2></div>
+  <ul class="points">
+    <li><b>結構檢查的偵測能力可以由 key 分布事先估計。</b>連號或群集型 key 幾乎沒有盲區，間距 2<sup>32</sup> 剩一半，雜湊型 key 剩三分之一。</li>
+    <li><b>內部節點是最該補的地方，而且可以免費補上。</b>內部節點的翻轉傷害是葉節點的 1340 倍以上，結構檢查在那裡固定有盲區。父子範圍檢查不多存任何東西，就讓內部節點造成的錯誤幾乎消失。</li>
+    <li><b>key 有固定規律時，稀疏的問題可以免費解決。</b>檢查低位元或把 key 換算成連號，「找不到」回到連號 key 的水準。再加上範圍檢查與空槽 dummy key 後降到 0。</li>
+    <li><b>key 沒有規律時，需要付出成本。</b>免費的做法只減少約三分之一，統計上不顯著。hash 映射減少七成以上，代價是頁數 2 倍、延遲約 2.3 倍，並失去依順序掃描的能力。</li>
+    <li><b>dummy key 要緊貼真 key 才有效，而且不能讓樹變大。</b>平均放在空隙裡幾乎沒有效果。當成一般 key 插入會讓樹變成 2 到 3 倍，抵銷偵測率的提升。只用空槽時頁數不變，但只能覆蓋 45% 的 key。</li>
+    <li><b>value 錯誤是結構檢查的下限。</b>value 沒有順序可言，任何結構規則都無法驗證它，每個 run 剩 15 到 21 個。</li>
+  </ul>
+</section>
+
+<section>
+  <div class="sec-head"><div class="eyebrow">限制</div><h2>解讀這些結果時要注意的事</h2></div>
+  <ul class="points limits">
+    <li>位元翻轉率 λ 比實際 DRAM 高出數個數量級，目的是在有限的操作數內取得足夠事件。</li>
+    <li>E11 只翻轉內部節點時，λ 再放大 50 倍，翻轉會在同一頁累積。跨層比較應使用「每次翻轉的錯誤數」，不應直接比較 SDC。</li>
+    <li>E10、E12、E13、E16 到 E21 每個設定 5 個 seed，E9 與 E11 為 3 個 seed。每個 run 相差 2 到 4 個錯誤答案的結果，應以配對檢定為準。</li>
+    <li>範圍檢查能發現問題，但不一定能修復。壞掉的內部節點有時已經在節點分裂時被寫回 SSD，重新載入只會載回壞的版本。</li>
+    <li>範圍檢查沒有抓到全部。只翻轉內部節點時，每 1000 次翻轉仍有不到 1 個錯誤答案。</li>
+    <li>hash 映射在 key 間距 2<sup>32</sup> 的 5 個 run 中，有 1 個發生連續重新載入，錯誤答案 263 個，其餘 4 個為 16 到 25 個。原因尚未查明。</li>
+    <li>hash 映射的範圍大小必須事先依資料量決定。</li>
+    <li>E13 的 dummy key 走一般的插入路徑。樹變大是這種做法的代價，不是 dummy key 必然的代價。</li>
+    <li>E16 的結論只適用於單一位元翻轉、SSD 內容正確的錯誤模型。頁面整個被換成舊版本這類錯誤，頁內 CRC 無法偵測。</li>
+    <li>工作負載固定為 90% 搜尋、10% 循序插入，翻轉只注入 DRAM。</li>
+    <li>E12 對 SDC 下降的解釋、E11 內部節點偵測率低於 100% 的原因、E9 order 16 偏低的原因、E13 的 value 錯誤隨樹變大而增加的原因，四者都是推測，沒有逐一事件驗證。</li>
+  </ul>
+</section>
+
+<footer>原始資料：results/e8…e21_dbscale.csv · 完整表格：results/SUMMARY_dbscale.md §16–18 · 離線試算：scripts/guard_model.py、sanity_ext_model.py、hashmap_model.py</footer>
+</div>
+
+<script>
+(function(){
+const NS='http://www.w3.org/2000/svg';
+const S=(tag,a,p)=>{const e=document.createElementNS(NS,tag);if(a)for(const k in a){if(k==='text')e.textContent=a[k];else e.setAttribute(k,a[k]);}if(p)p.appendChild(e);return e;};
+const H=(tag,cls,text,p)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;if(p)p.appendChild(e);return e;};
+function svgPow(p,attrs,k,pre){const t=S('text',attrs,p); t.appendChild(document.createTextNode((pre||'')+'2')); const s=S('tspan',{dy:-4.5,'font-size':8.5},t); s.textContent=String(k); return t;}
+function htmlPow(p,k){p.appendChild(document.createTextNode('2')); H('sup',null,String(k),p);}
+
+function showTip(plot,x,y,title,rows){
+  let t=plot.querySelector('.tip'); if(!t){t=H('div','tip',null,plot);}
+  t.textContent=''; if(title){const tt=H('div','tip-t',null,t); if(typeof title==='string')tt.textContent=title; else{tt.appendChild(document.createTextNode(title.pre)); htmlPow(tt,title.k);}}
+  for(const r of rows){const row=H('div','tip-r',null,t); if(r.color){const k=H('span','tip-k',null,row);k.style.background=r.color;} H('b',null,r.value,row); if(r.label)H('span','tip-l',r.label,row);}
+  t.hidden=false;
+  const pw=plot.clientWidth,tw=t.offsetWidth,th=t.offsetHeight;
+  let left=x+12; if(left+tw>pw-2)left=x-12-tw; if(left<2)left=2;
+  let top=y-th-10; if(top<0)top=y+14;
+  t.style.left=left+'px'; t.style.top=top+'px';
+}
+function hideTip(plot){const t=plot.querySelector('.tip'); if(t)t.hidden=true;}
+function fresh(plot,W,Ht,label){const old=plot.querySelector('svg'); if(old)old.remove(); const svg=S('svg',{width:W,height:Ht,viewBox:'0 0 '+W+' '+Ht,role:'img','aria-label':label}); plot.insertBefore(svg,plot.firstChild); return svg;}
+function mount(plot,render){let last=0; const run=()=>{const w=Math.floor(plot.clientWidth); if(w>0&&w!==last){last=w; hideTip(plot); render(w);}}; run(); if('ResizeObserver' in window){new ResizeObserver(()=>requestAnimationFrame(run)).observe(plot);}else{window.addEventListener('resize',run);}}
+function marker(p,shape,cx,cy,color){let m; if(shape==='circle')m=S('circle',{cx:cx,cy:cy,r:4.5},p); else if(shape==='square')m=S('rect',{x:cx-4,y:cy-4,width:8,height:8,rx:1},p); else if(shape==='tri')m=S('path',{d:'M'+cx+','+(cy-5.5)+'L'+(cx+5.2)+','+(cy+3.8)+'L'+(cx-5.2)+','+(cy+3.8)+'Z'},p); else m=S('path',{d:'M'+cx+','+(cy-5.8)+'L'+(cx+5.8)+','+cy+'L'+cx+','+(cy+5.8)+'L'+(cx-5.8)+','+cy+'Z'},p); m.setAttribute('class','mk'); m.style.fill=color; return m;}
+function legendLines(ul,series){for(const s of series){const li=H('li',null,null,ul); const sv=S('svg',{width:26,height:12,viewBox:'0 0 26 12','aria-hidden':'true'},li); const l=S('line',{x1:1,x2:25,y1:6,y2:6,class:'ln'},sv); l.style.stroke=s.color; if(s.shape)marker(sv,s.shape,13,6,s.color); li.appendChild(document.createTextNode(s.name));}}
+function bindHit(plot,r,onShow,onHide){r.setAttribute('tabindex','0'); const show=()=>onShow(); r.addEventListener('pointerenter',show); r.addEventListener('pointermove',show); r.addEventListener('focus',show); const hide=()=>{onHide&&onHide(); hideTip(plot);}; r.addEventListener('pointerleave',hide); r.addEventListener('blur',hide);}
+
+/* ── line chart ── */
+function lineChart(plot,cfg){
+  mount(plot,W=>{
+    const Ht=cfg.H||290,L=44,R=cfg.endLabels?84:18,T=14,B=46;
+    const iw=W-L-R,ih=Ht-T-B,n=cfg.xs.length,pad=14;
+    const x=i=>L+pad+i*(iw-2*pad)/(n-1), y=v=>T+ih-(v/cfg.yMax)*ih;
+    const svg=fresh(plot,W,Ht,cfg.label);
+    for(const v of cfg.yTicks){const yy=Math.round(y(v))+.5; S('line',{x1:L,x2:W-R,y1:yy,y2:yy,class:v===0?'ax':'grid'},svg); S('text',{x:L-8,y:yy+4,'text-anchor':'end',class:'t-axis',text:cfg.yFmt(v)},svg);}
+    cfg.xs.forEach((k,i)=>svgPow(svg,{x:x(i),y:T+ih+19,'text-anchor':'middle',class:'t-axis'},k));
+    S('text',{x:L+iw/2,y:Ht-6,'text-anchor':'middle',class:'t-ttl',text:cfg.xTitle},svg);
+    const cross=S('line',{x1:0,x2:0,y1:T,y2:T+ih,class:'cross',visibility:'hidden'},svg);
+    for(const s of cfg.series){const p=S('path',{d:s.vals.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+','+y(v).toFixed(1)).join(''),class:'ln'},svg); p.style.stroke=s.color;}
+    for(const s of cfg.series){if(s.shape)s.vals.forEach((v,i)=>marker(svg,s.shape,x(i),y(v),s.color)); if(cfg.endLabels)S('text',{x:x(n-1)+12,y:y(s.vals[n-1])+4,class:'t-lab',text:s.name},svg);}
+    for(let i=0;i<n;i++){
+      const x0=i===0?L:(x(i-1)+x(i))/2, x1=i===n-1?L+iw:(x(i)+x(i+1))/2;
+      const r=S('rect',{x:x0,y:T,width:x1-x0,height:ih,class:'hit','aria-label':cfg.xTitle+' 2^'+cfg.xs[i]},svg);
+      bindHit(plot,r,()=>{cross.setAttribute('x1',x(i));cross.setAttribute('x2',x(i));cross.setAttribute('visibility','visible');
+        const rows=cfg.series.map(s=>({color:s.color,value:cfg.tipFmt(s.vals[i]),label:s.name})); if(cfg.extra)rows.push(cfg.extra(i));
+        showTip(plot,x(i),y(Math.max(...cfg.series.map(s=>s.vals[i]))),{pre:cfg.xTitle+' ',k:cfg.xs[i]},rows);},()=>cross.setAttribute('visibility','hidden'));
+    }
+  });
+}
+
+/* ── horizontal bars ── */
+function hbarChart(plot,cfg){
+  mount(plot,W=>{
+    const rowH=34,L=cfg.L,R=cfg.R,T=6,B=26,n=cfg.rows.length,Ht=T+n*rowH+B,iw=W-L-R;
+    const x=v=>L+(v/cfg.xMax)*iw;
+    const svg=fresh(plot,W,Ht,cfg.label);
+    for(const v of cfg.xTicks){const xx=Math.round(x(v))+.5; S('line',{x1:xx,x2:xx,y1:T,y2:T+n*rowH,class:v===0?'ax':'grid'},svg); S('text',{x:xx,y:T+n*rowH+17,'text-anchor':'middle',class:'t-axis',text:cfg.xFmt(v)},svg);}
+    cfg.rows.forEach((d,i)=>{
+      const cy=T+i*rowH+rowH/2,bw=Math.max(1,x(d.value)-L),bh=16,rr=Math.min(4,bw);
+      if(d.k!=null)svgPow(svg,{x:L-10,y:cy+4,'text-anchor':'end',class:'t-lab'},d.k,d.name+' '); else S('text',{x:L-10,y:cy+4,'text-anchor':'end',class:'t-lab',text:d.name},svg);
+      const bar=S('path',{d:'M'+L+','+(cy-bh/2)+'H'+(L+bw-rr)+'Q'+(L+bw)+','+(cy-bh/2)+' '+(L+bw)+','+(cy-bh/2+rr)+'V'+(cy+bh/2-rr)+'Q'+(L+bw)+','+(cy+bh/2)+' '+(L+bw-rr)+','+(cy+bh/2)+'H'+L+'Z'},svg); bar.style.fill=d.color;
+      let end=L+bw;
+      if(d.ref!=null){const rx=x(d.ref); const h=S('line',{x1:rx,x2:rx,y1:cy-13,y2:cy+13},svg); h.style.stroke='var(--surface)'; h.style.strokeWidth=6; const t=S('line',{x1:rx,x2:rx,y1:cy-13,y2:cy+13},svg); t.style.stroke='var(--ink)'; t.style.strokeWidth=2; end=Math.max(end,rx+2);}
+      S('text',{x:end+8,y:cy+4,class:'t-val',text:d.text},svg);
+      const r=S('rect',{x:0,y:cy-rowH/2,width:W,height:rowH,class:'hit','aria-label':d.name+(d.k!=null?' 2^'+d.k:'')+' '+d.text},svg);
+      bindHit(plot,r,()=>{bar.classList.add('on'); showTip(plot,Math.min(end,W-40),cy-8,d.k!=null?{pre:d.name+' ',k:d.k}:d.name,d.tip);},()=>bar.classList.remove('on'));
+    });
+  });
+}
+
+/* ── E12 columns with per-seed dots ── */
+(function(){
+  const plot=document.getElementById('c-e12');
+  const D=[{k:0,m:2719.0,s:[1580,1435,6229,2454,1897],v:18.2},{k:8,m:1447.8,s:[1582,1338,802,2454,1063],v:19.8},{k:16,m:1164.8,s:[1083,1106,635,2454,546],v:19.4},{k:24,m:877.0,s:[1082,1098,559,1510,136],v:20.0},{k:32,m:636.6,s:[1055,785,28,1283,32],v:19.2}];
+  const fmt=v=>Math.round(v).toLocaleString('en-US');
+  mount(plot,W=>{
+    const Ht=300,L=46,R=12,T=16,B=46,iw=W-L-R,ih=Ht-T-B,band=iw/D.length,yMax=7000;
+    const y=v=>T+ih-(v/yMax)*ih;
+    const svg=fresh(plot,W,Ht,'無保護時該找到卻找不到的次數，依 key 間距');
+    for(const v of [0,2000,4000,6000]){const yy=Math.round(y(v))+.5; S('line',{x1:L,x2:W-R,y1:yy,y2:yy,class:v===0?'ax':'grid'},svg); S('text',{x:L-8,y:yy+4,'text-anchor':'end',class:'t-axis',text:fmt(v)},svg);}
+    S('text',{x:L+iw/2,y:Ht-6,'text-anchor':'middle',class:'t-ttl',text:'key 間距'},svg);
+    D.forEach((d,i)=>{
+      const cx=L+band*i+band/2,bw=Math.min(24,band*.4),x0=cx-bw/2-6,yy=y(d.m),h=T+ih-yy,r=4;
+      const bar=S('path',{d:'M'+x0+','+(yy+h)+'V'+(yy+r)+'Q'+x0+','+yy+' '+(x0+r)+','+yy+'H'+(x0+bw-r)+'Q'+(x0+bw)+','+yy+' '+(x0+bw)+','+(yy+r)+'V'+(yy+h)+'Z'},svg); bar.style.fill='var(--s-none)';
+      for(const sv of d.s){const c=S('circle',{cx:x0+bw+14,cy:y(sv),r:3.5,class:'mk'},svg); c.style.fill='var(--ink-2)'; c.style.strokeWidth=3;}
+      S('text',{x:x0+bw/2,y:yy-7,'text-anchor':'middle',class:'t-val',text:fmt(d.m)},svg);
+      svgPow(svg,{x:cx,y:T+ih+19,'text-anchor':'middle',class:'t-axis'},d.k);
+      const hit=S('rect',{x:L+band*i,y:T,width:band,height:ih,class:'hit','aria-label':'key 間距 2^'+d.k+'，平均 '+fmt(d.m)},svg);
+      bindHit(plot,hit,()=>{bar.classList.add('on'); showTip(plot,cx,Math.min(yy,y(Math.max(...d.s))),{pre:'key 間距 ',k:d.k},[{color:'var(--s-none)',value:fmt(d.m),label:'平均'},{value:d.s.map(fmt).join(' · '),label:'各 seed'},{value:d.v.toFixed(1),label:'value 錯誤'}]);},()=>bar.classList.remove('on'));
+    });
+  });
+})();
+
+/* ── E10 SDC lines ── */
+(function(){
+  const series=[
+    {name:'SANITY',color:'var(--s-sanity)',shape:'circle',vals:[7.179,9.253,8.881,9.769,10.58]},
+    {name:'HYBRID',color:'var(--s-hybrid)',shape:'diamond',vals:[6.439,7.179,7.993,9.029,9.695]},
+    {name:'CTRL_CRC',color:'var(--s-ctrl)',shape:'tri',vals:[6.069,6.069,6.069,6.069,6.069]}];
+  const closed=[67,65,32,20,20];
+  legendLines(document.getElementById('lg-e10'),series);
+  lineChart(document.getElementById('c-e10'),{label:'SDC 隨 key 間距變化：SANITY、HYBRID、CTRL_CRC',xs:[0,8,16,24,32],xTitle:'key 間距',yMax:12,yTicks:[0,2,4,6,8,10,12],yFmt:v=>String(v),series:series,endLabels:true,tipFmt:v=>v.toFixed(2)+'e-4',extra:i=>({value:closed[i]+'%',label:'HYBRID 補上的差距'})});
+})();
+
+/* ── latency bars ── */
+hbarChart(document.getElementById('c-lat'),{label:'各方案每次操作的平均延遲',L:82,R:76,xMax:30,xTicks:[0,10,20,30],xFmt:v=>String(v),rows:[
+  {name:'NONE',value:10.50,color:'var(--s-none)',text:'10.50 µs',tip:[{value:'10.50 µs',label:'基準'}]},
+  {name:'SANITY',value:15.13,color:'var(--s-sanity)',text:'15.13 µs',tip:[{value:'15.13 µs',label:'比 NONE 高 44%'}]},
+  {name:'HYBRID',value:16.82,color:'var(--s-hybrid)',text:'16.82 µs',tip:[{value:'16.82 µs',label:'比 NONE 高 60%'}]},
+  {name:'CTRL_CRC',value:17.70,color:'var(--s-ctrl)',text:'17.70 µs',tip:[{value:'17.70 µs',label:'比 NONE 高 69%'}]},
+  {name:'FULL_CRC',value:28.56,color:'var(--s-full)',text:'28.56 µs',tip:[{value:'28.56 µs',label:'比 NONE 高 172%'}]}]});
+
+/* ── E8 measured vs predicted ── */
+hbarChart(document.getElementById('c-e8'),{label:'各 key 分布下結構檢查相對 CTRL_CRC 的偵測比例，實測與公式預測',L:104,R:54,xMax:1,xTicks:[0,.25,.5,.75,1],xFmt:v=>String(v),rows:[
+  ['clustered',null,.980,1.000,'7.40e-4'],['geomgap',8,.865,.880,'9.92e-4'],['geomgap',16,.750,.755,'8.73e-4'],['geomgap',24,.632,.630,'9.62e-4'],['random64',null,.338,.332,'1.24e-3']
+ ].map(r=>({name:r[0],k:r[1],value:r[2],ref:r[3],color:'var(--s-sanity)',text:r[2].toFixed(3),tip:[{color:'var(--s-sanity)',value:r[2].toFixed(3),label:'實測'},{color:'var(--tip-ink)',value:r[3].toFixed(3),label:'公式預測'},{value:r[4],label:'SANITY SDC'}]}))});
+
+
+/* ── stacked horizontal bars, grouped ── */
+function stackChart(plot,cfg){
+  mount(plot,W=>{
+    const rowH=28,gH=24,gGap=8,L=cfg.L,R=cfg.R,T=2,B=26,iw=W-L-R;
+    let Ht=T; for(const g of cfg.groups)Ht+=gH+g.rows.length*rowH+gGap; Ht+=B-gGap;
+    const x=v=>L+(v/cfg.xMax)*iw, bot=Ht-B;
+    const svg=fresh(plot,W,Ht,cfg.label);
+    for(const v of cfg.xTicks){const xx=Math.round(x(v))+.5; S('line',{x1:xx,x2:xx,y1:T+gH-4,y2:bot,class:v===0?'ax':'grid'},svg); S('text',{x:xx,y:bot+17,'text-anchor':'middle',class:'t-axis',text:String(v)},svg);}
+    let y=T;
+    for(const g of cfg.groups){
+      if(g.k!=null)svgPow(svg,{x:0,y:y+15,class:'t-grp'},g.k,g.title+' '); else S('text',{x:0,y:y+15,class:'t-grp',text:g.title},svg); y+=gH;
+      for(const d of g.rows){
+        const cy=y+rowH/2,bh=14,wa=d.a>0?Math.max(2,x(d.a)-L):0,x1=L+wa+(wa>0?2:0),xe=x(d.a+d.b),rr=4;
+        S('text',{x:L-10,y:cy+4,'text-anchor':'end',class:'t-lab',text:d.name},svg);
+        const grp=S('g',null,svg);
+        if(wa>0){const a=S('rect',{x:L,y:cy-bh/2,width:wa,height:bh},grp); a.style.fill='var(--e-miss)';}
+        const b=S('path',{d:'M'+x1+','+(cy-bh/2)+'H'+(xe-rr)+'Q'+xe+','+(cy-bh/2)+' '+xe+','+(cy-bh/2+rr)+'V'+(cy+bh/2-rr)+'Q'+xe+','+(cy+bh/2)+' '+(xe-rr)+','+(cy+bh/2)+'H'+x1+'Z'},grp); b.style.fill='var(--e-val)';
+        S('text',{x:xe+8,y:cy+4,class:'t-val',text:(d.a+d.b).toFixed(1)},svg);
+        const r=S('rect',{x:0,y:y,width:W,height:rowH,class:'hit','aria-label':g.title+' '+d.name+'，合計 '+(d.a+d.b).toFixed(1)},svg);
+        bindHit(plot,r,()=>{grp.classList.add('on'); showTip(plot,Math.min(xe,W-60),cy-6,g.title+' · '+d.name,[{color:'var(--e-miss)',value:d.a.toFixed(1),label:'找不到'},{color:'var(--e-val)',value:d.b.toFixed(1),label:'value 錯誤'},{value:d.pages,label:'頁數'},{value:d.lat+' µs',label:'平均延遲'}]);},()=>grp.classList.remove('on'));
+        y+=rowH;
+      }
+      y+=gGap;
+    }
+  });
+}
+
+/* ── E13 detection ratio, measured vs model ── */
+(function(){
+  const mk=r=>({name:r[0],value:r[1],ref:r[2],color:'var(--s-sanity)',text:r[1].toFixed(3),tip:[{color:'var(--s-sanity)',value:r[1].toFixed(3),label:'實測'},{color:'var(--tip-ink)',value:r[2].toFixed(3),label:'模型預測'}]});
+  const opt={L:62,R:52,xMax:1,xTicks:[0,.5,1],xFmt:v=>String(v)};
+  hbarChart(document.getElementById('c-e13a'),Object.assign({label:'key 間距 2^32：各種 dummy key 放法下結構檢查抓到的真 key 翻轉比例',rows:[['不放',.468,.497],['對照組',.490,.514],['左側',.474,.496],['右側',.976,.999],['兩側',.969,1]].map(mk)},opt));
+  hbarChart(document.getElementById('c-e13b'),Object.assign({label:'random64：各種 dummy key 放法下結構檢查抓到的真 key 翻轉比例',rows:[['不放',.298,.333],['左側',.635,.665],['右側',.635,.666],['兩側',.975,1]].map(mk)},opt));
+})();
+
+/* ── E13 end-to-end wrong answers ── */
+stackChart(document.getElementById('c-e13c'),{label:'key 間距 2^32 下各方案與 dummy key 放法的未偵測錯誤答案數，分為找不到與 value 錯誤',L:62,R:46,xMax:55,xTicks:[0,10,20,30,40,50],groups:[
+  {title:'SANITY',rows:[{name:'不放',a:10.2,b:18.4,pages:'5,762',lat:'12.97'},{name:'對照組',a:14.8,b:23.2,pages:'11,519',lat:'24.48'},{name:'右側',a:7.2,b:22.4,pages:'11,519',lat:'26.04'},{name:'兩側',a:30.4,b:20.8,pages:'16,970',lat:'36.79'}]},
+  {title:'HYBRID',rows:[{name:'不放',a:7.8,b:18.4,pages:'5,762',lat:'14.68'},{name:'右側',a:0.6,b:22.4,pages:'11,519',lat:'28.23'},{name:'兩側',a:1.4,b:20.8,pages:'16,970',lat:'39.47'}]},
+  {title:'CTRL_CRC',rows:[{name:'不放',a:0,b:16.4,pages:'5,762',lat:'17.70'},{name:'右側',a:0,b:21.6,pages:'11,519',lat:'30.80'},{name:'兩側',a:0,b:19.6,pages:'16,970',lat:'43.25'}]}]});
+
+
+/* ── E17–E20 SANITY-only extensions ── */
+stackChart(document.getElementById('c-e20'),{label:'只用結構檢查的各種做法下未偵測的錯誤答案數，分為找不到與 value 錯誤',L:84,R:46,xMax:40,xTicks:[0,10,20,30,40],groups:[
+  {title:'連號 key',rows:[{name:'SANITY',a:2.0,b:17.4,pages:'5,762',lat:'15.13'},{name:'範圍檢查',a:0,b:17.0,pages:'5,762',lat:'15.19'}]},
+  {title:'key 間距',k:32,rows:[{name:'SANITY',a:10.2,b:18.4,pages:'5,762',lat:'12.97'},{name:'範圍檢查',a:7.8,b:18.2,pages:'5,762',lat:'13.06'},{name:'空槽 dummy',a:8.0,b:18.4,pages:'5,762',lat:'14.76'},{name:'對齊檢查',a:2.2,b:17.0,pages:'5,762',lat:'15.15'},{name:'範圍＋空槽',a:5.6,b:18.4,pages:'5,762',lat:'14.83'},{name:'三項全開',a:0,b:15.2,pages:'5,762',lat:'18.52'}]},
+  {title:'random64',rows:[{name:'SANITY',a:14.8,b:18.8,pages:'5,762',lat:'12.20'},{name:'範圍檢查',a:12.0,b:18.6,pages:'5,762',lat:'12.30'},{name:'空槽 dummy',a:12.4,b:19.6,pages:'5,762',lat:'14.05'},{name:'範圍＋空槽',a:9.8,b:19.6,pages:'5,762',lat:'14.13'}]}]});
+
+/* ── E21 dense mapping ── */
+stackChart(document.getElementById('c-e21'),{label:'key 映射到密集範圍前後未偵測的錯誤答案數，分為找不到與 value 錯誤',L:104,R:46,xMax:40,xTicks:[0,10,20,30,40],groups:[
+  {title:'key 間距',k:32,rows:[{name:'原樣',a:10.2,b:18.4,pages:'5,762',lat:'12.97'},{name:'換算成連號',a:2.0,b:17.4,pages:'5,762',lat:'15.13'}]},
+  {title:'random64',rows:[{name:'原樣',a:14.8,b:18.8,pages:'5,762',lat:'12.20'},{name:'兩倍大的對照',a:12.6,b:22.8,pages:'11,519',lat:'25.53'},{name:'hash 4 倍',a:4.6,b:18.0,pages:'11,504',lat:'28.21'},{name:'hash 2 倍',a:4.6,b:21.4,pages:'11,493',lat:'28.55'},{name:'hash 1.33 倍',a:3.4,b:18.0,pages:'11,521',lat:'29.42'}]}]});
+
+/* ── E9 lines ── */
+(function(){
+  const series=[
+    {name:'公式 (64 − k) / 64',color:'var(--muted)',shape:null,vals:[1,.875,.75,.625]},
+    {name:'order 253',color:'var(--o-253)',shape:'circle',vals:[.980,.840,.730,.616]},
+    {name:'order 64',color:'var(--o-64)',shape:'square',vals:[.937,.805,.706,.616]},
+    {name:'order 16',color:'var(--o-16)',shape:'tri',vals:[.779,.696,.611,.535]}];
+  legendLines(document.getElementById('lg-e9'),series);
+  lineChart(document.getElementById('c-e9'),{label:'不同 order 下結構檢查相對 CTRL_CRC 的偵測比例',xs:[0,8,16,24],xTitle:'key 間距',yMax:1,yTicks:[0,.25,.5,.75,1],yFmt:v=>String(v),series:series,endLabels:false,tipFmt:v=>v.toFixed(3)});
+})();
+
+/* ── E11 per-bit panels ── */
+(function(){
+  const DATA={"leaf_0":{"det":[53,47,57,58,70,59,54,64,60,53,49,58,48,38,45,62,69,46,39,55,52,53,45,67,55,56,57,51,51,54,55,49,49,52,60,56,55,64,60,36,57,63,56,49,50,41,49,60,47,60,79,60,56,52,39,49,43,50,48,45,36,63,69,44],"exp":[53,47,57,60,71,59,54,64,61,53,49,58,48,40,45,63,69,48,39,55,52,53,45,67,56,57,59,51,51,55,55,49,49,53,61,57,57,65,60,36,57,63,56,50,51,42,49,60,47,60,79,61,56,52,39,49,44,50,49,45,36,63,69,44]},"leaf_16":{"det":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,67,47,37,54,48,52,45,66,51,57,55,50,50,54,55,48,46,49,60,56,54,60,59,36,56,60,55,44,50,41,48,57,45,59,78,58,53,50,39,48,40,48,48,44,35,62,68,41],"exp":[53,47,57,60,71,59,54,64,61,53,49,58,48,40,45,63,69,48,39,55,52,53,45,67,56,57,59,51,51,55,55,49,49,53,61,57,57,65,60,36,57,63,56,50,51,42,49,60,47,60,79,61,56,52,39,49,44,50,49,45,36,63,69,44]},"leaf_32":{"det":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,47,48,58,56,55,57,57,36,56,59,55,45,48,41,47,57,44,59,77,58,52,46,38,47,38,44,46,43,34,61,66,40],"exp":[53,47,57,60,71,59,54,64,61,53,49,58,48,40,45,63,69,48,39,55,52,53,45,67,56,57,59,51,51,55,55,49,49,53,61,57,57,65,60,36,57,63,56,50,51,42,49,60,47,60,79,61,56,52,39,49,44,50,49,45,36,63,69,44]},"internal_0":{"det":[0,0,0,0,0,0,0,1,8,13,20,14,11,9,9,13,13,17,10,12,7,14,9,23,12,19,18,13,11,12,13,10,13,12,17,13,8,15,23,10,15,17,6,14,9,10,11,16,12,13,16,20,7,9,10,17,8,11,15,15,4,13,26,12],"exp":[15,21,17,18,16,17,20,22,11,14,22,15,14,11,10,17,15,20,13,14,10,16,12,29,12,20,20,13,14,13,13,10,14,13,20,15,12,17,26,11,17,19,8,16,11,17,12,19,14,16,22,22,13,11,13,19,10,14,17,15,6,17,28,15]},"internal_16":{"det":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,16,18,10,9,9,12,9,13,9,15,11,6,15,22,8,12,16,6,12,6,10,11,16,12,12,12,16,6,9,7,16,7,10,12,13,4,12,23,12],"exp":[15,21,17,18,16,17,20,22,11,14,22,15,14,11,10,17,15,20,13,14,10,16,12,29,12,20,20,13,14,13,13,10,14,13,20,15,12,17,26,11,17,19,8,16,11,17,12,19,14,16,22,22,13,11,13,19,10,14,17,15,6,17,28,15]},"internal_32":{"det":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,11,13,4,11,5,8,7,14,11,12,12,12,5,4,5,13,7,10,11,11,4,11,18,11],"exp":[15,21,17,18,16,17,20,22,11,14,22,15,14,11,10,17,15,20,13,14,10,16,12,29,12,20,20,13,14,13,13,10,14,13,20,15,12,17,26,11,17,19,8,16,11,17,12,19,14,16,22,22,13,11,13,19,10,14,17,15,6,17,28,15]}};
+  const panels=[['leaf',0],['leaf',16],['leaf',32],['internal',0],['internal',16],['internal',32]];
+  const grid=document.getElementById('bits');
+  const lvName={leaf:'葉節點',internal:'內部節點'};
+  for(const [lv,k] of panels){
+    const d=DATA[lv+'_'+k], edge=lv==='leaf'?k:k+7.4;
+    const fig=H('div','bitpanel',null,grid);
+    htmlPow(H('div','bp-t',lvName[lv]+' · key 間距 ',fig),k);
+    H('div','bp-s',edge===0?'預測：每個位元都可偵測':'預測：最低 '+(lv==='leaf'?k:edge.toFixed(1))+' 個位元無法偵測',fig);
+    const plot=H('div','plot',null,fig);
+    mount(plot,W=>{
+      const Ht=148,L=38,R=6,T=6,B=24,iw=W-L-R,ih=Ht-T-B,bw=iw/64;
+      const y=v=>T+ih-v*ih;
+      const svg=fresh(plot,W,Ht,lvName[lv]+'，key 間距 2^'+k+'：結構檢查對 key 各位元的偵測率');
+      if(edge>0)S('rect',{x:L,y:T,width:edge*bw,height:ih,class:'band'},svg);
+      for(const v of [0,.5,1]){const yy=Math.round(y(v))+.5; S('line',{x1:L,x2:W-R,y1:yy,y2:yy,class:v===0?'ax':'grid'},svg); S('text',{x:L-6,y:yy+4,'text-anchor':'end',class:'t-axis',text:(v*100)+'%'},svg);}
+      for(const b of [0,16,32,48,63])S('text',{x:L+(b+.5)*bw,y:T+ih+16,'text-anchor':'middle',class:'t-axis',text:String(b)},svg);
+      const cur=S('rect',{x:0,y:T,width:Math.max(bw,2),height:ih,class:'cursor',visibility:'hidden'},svg);
+      for(let b=0;b<64;b++){const e=d.exp[b]; if(!e)continue; const rate=Math.min(1,d.det[b]/e); if(rate<=0)continue; const h=rate*ih; S('rect',{x:L+b*bw+.5,y:T+ih-h,width:Math.max(1.2,bw-1),height:h,rx:.8,class:'bar-bit'},svg);}
+      const hit=S('rect',{x:L,y:T,width:iw,height:ih,class:'hit'},svg);
+      const at=ev=>{const box=svg.getBoundingClientRect(); const px=ev.clientX-box.left; const b=Math.max(0,Math.min(63,Math.floor((px-L)/bw))); const e=d.exp[b],dt=d.det[b]; cur.setAttribute('x',L+b*bw); cur.setAttribute('visibility','visible'); showTip(plot,L+(b+.5)*bw,T+ih-Math.min(1,e?dt/e:0)*ih,'bit '+b,[{color:'var(--s-sanity)',value:(e?Math.round(100*Math.min(1,dt/e)):0)+'%',label:'偵測率'},{value:dt+' / '+e,label:'偵測次數 / 樣本數'}]);};
+      hit.addEventListener('pointermove',at); hit.addEventListener('pointerenter',at); hit.addEventListener('pointerleave',()=>{cur.setAttribute('visibility','hidden'); hideTip(plot);});
+    });
+  }
+  /* table twin */
+  const tw=document.getElementById('bits-table'); const tb=H('table',null,null,tw); const th=H('tr',null,null,H('thead',null,null,tb));
+  H('th',null,'bit',th); for(const [lv,k] of panels){htmlPow(H('th','num',(lv==='leaf'?'葉 ':'內部 '),th),k);}
+  const body=H('tbody',null,null,tb);
+  for(let b=0;b<64;b++){const tr=H('tr',null,null,body); H('td','name',String(b),tr); for(const [lv,k] of panels){const d=DATA[lv+'_'+k]; H('td','num',d.det[b]+' / '+d.exp[b],tr);}}
+})();
+})();
+</script>
