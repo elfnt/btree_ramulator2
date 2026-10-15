@@ -101,7 +101,7 @@ for cid, cfg in resc.items():
         ax.plot(range(len(xs)), [r["sdc"] for r in rows], ls=ls, color=cfg_col[cid], marker=cfg_mk[cid], lw=LW,
                 ms=MS, mec="white", mew=1.2, alpha=alpha, label=lab)
 ax.axvline(xs.index(1.0), color=INK, lw=1, ls=":")
-ax.text(xs.index(1.0) + 0.06, 0.03, "budget = B_int\n(all internal nodes fit)", color=INK, fontsize=9, va="bottom",
+ax.text(xs.index(1.0) + 0.06, 0.80, "budget = B_int\n(all internal nodes fit)", color=INK, fontsize=9, va="bottom",
         transform=ax.get_xaxis_transform())
 if pending:
     ax.text(0.99, 0.97, "order 16 (16,076 internal nodes): Ramulator2 run in progress", transform=ax.transAxes,

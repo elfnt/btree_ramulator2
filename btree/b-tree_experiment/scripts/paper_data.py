@@ -173,9 +173,16 @@ e2 = {'main': cells, 'rescaled': {}, 'knee': []}
 E2_INCOMPLETE = []
 for tag in ['e2b', 'e2c', 'e2d', 'e2e']:
     rows = load(f'{tag}_dbscale.csv')
-    if not rows or len(rows) < 120:          # 4 policies × 10 budgets × 3 seeds; skip a sweep still running
-        E2_INCOMPLETE.append(f'{tag}: {len(rows) if rows else 0}/120 rows')
+    # 4 policies × 10 budgets × 3 seeds = 120. A sweep still running is used only once BY_LEVEL and LRU
+    # (the two policies the knee comparison needs) are complete; missing policies are listed as partial.
+    pol_n = {}
+    for r in (rows or []):
+        pol_n[r['policy']] = pol_n.get(r['policy'], 0) + 1
+    if not rows or pol_n.get('BY_LEVEL', 0) < 30 or pol_n.get('LRU', 0) < 30:
+        E2_INCOMPLETE.append(f'{tag}: {len(rows) if rows else 0}/120 rows (skipped)')
         continue
+    if len(rows) < 120:
+        E2_INCOMPLETE.append(f'{tag}: {len(rows)}/120 rows (partial: {pol_n})')
     runcounts[tag.upper()] = len(rows)
     nint = mean(F(r, 'n_internal_total') for r in rows)
     B_int = nint * 12
@@ -595,8 +602,8 @@ P('| config | order | keys | n_int | knee B | % B_full | BY_LEVEL | LRU | BY_HOT
 P('|---|---|---|---|---|---|---|---|---|---|---|---|')
 for k in data['E2']['knee']:
     P(f"| {k['config']} | {k['order']} | {k['keys']:,} | {k['n_internal']:,.0f} | {k['knee_budget_bytes']:,.0f} | "
-      f"{k['knee_pct_B_full']:.2f} % | {f_sdc(k['sdc_BY_LEVEL'])} | {f_sdc(k['sdc_LRU'])} | {f_sdc(k['sdc_BY_HOTNESS'])} | "
-      f"{f_sdc(k['sdc_RANDOM'])} | {k['by_level_over_lru']:.3f} | {k['lru_over_by_level']:.1f}× |")
+      f"{k['knee_pct_B_full']:.2f} % | {f_sdc(k['sdc_BY_LEVEL'])} | {f_sdc(k['sdc_LRU'])} | {f_sdc(k.get('sdc_BY_HOTNESS'))} | "
+      f"{f_sdc(k.get('sdc_RANDOM'))} | {k['by_level_over_lru']:.3f} | {k['lru_over_by_level']:.1f}× |")
 P('')
 
 # E3

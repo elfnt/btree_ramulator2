@@ -18,7 +18,7 @@ DRAM 的 bit flip 會在沒有任何警報的情況下損毀記憶體中的 B+ t
 | 工作負載 | 30,000 次操作，90% 搜尋、10% 插入 |
 | 故障 | DRAM 內均勻 bit flip，預設 λ = 3×10⁻³ flips/page/s（比真實高約 10⁶ 倍以加速） |
 | 指標 | **SDC**：搜尋回傳錯誤且全程無警報的比例；**時間**：每次操作平均延遲；**成本**：可靠記憶體與頁數 |
-| 規模 | 1,292 次 run，每格 3–5 個 seed；E2e（order 16）仍在執行 |
+| 規模 | 1,352 次 run，每格 3–5 個 seed；E2e（order 16）的 BY_HOTNESS 與 RANDOM 仍在執行 |
 
 保護方案（λ = 3×10⁻³，5 seeds）：
 
@@ -41,7 +41,7 @@ CTRL_CRC 的時間成本是 FULL_CRC 的 39%。SANITY 的平均 SDC 是 3.8×10�
 
 ### 2. 可靠記憶體的最適預算 = 全部 internal node 的大小（E2）
 
-預算以 B_int（剛好裝下全部 internal node 所需的位元組）為單位。已完成的三種樹 internal node 從 131 到 4,163 個，**膝點全部落在 1.0×B_int**。優先保留上層節點的 BY_LEVEL 在每個預算都贏 LRU，領先幅度隨 internal node 變多由 34 倍降到 5 倍。order 16（16,076 個 internal node）的 Ramulator2 版仍在執行，C++ 模型版同樣落在 1.0×B_int，領先 4 倍。
+預算以 B_int（剛好裝下全部 internal node 所需的位元組）為單位。四種樹的 internal node 從 131 到 16,076 個（相差 123 倍），**膝點全部落在 1.0×B_int**，再增加預算幾乎沒有效果。優先保留上層節點的 BY_LEVEL 在每個預算都贏 LRU，領先幅度隨 internal node 變多由 34 倍降到 3.6 倍：internal node 越多，LRU 自然留住的上層節點也越多。
 
 ![E2](btree/b-tree_experiment/results/figures/readme_r2/fig2_e2_budget_knee.png)
 
@@ -94,7 +94,7 @@ SANITY 只檢查 key 是否遞增。key 間距為 2ᵏ 時，最低 k 個位元�
 - SANITY 與 NONE 的 SDC 有重尾：單一 seed 打中熱門 internal node 就會多出數百個錯誤答案，所以文中與圖中的錯誤答案數用中位數，延遲用平均。
 - Ramulator2 後端在 DRAM miss 時原本沒有計入 SSD 讀取時間，已在實驗層補上（只影響 E5 的延遲，其他實驗沒有 miss）。
 - E7 的盲區邊界以「事件數」計算；以讀取次數加權的算法會被單一重尾事件主導，不再使用。
-- E2e（order 16）的 Ramulator2 版仍在執行，BY_LEVEL 與 LRU 先跑，BY_HOTNESS 與 RANDOM 隨後補上。
+- E2e（order 16）的 BY_HOTNESS 與 RANDOM 仍在執行；圖 2 只比較 BY_LEVEL 與 LRU，不受影響。
 
 ## 本 repo 的結構
 
