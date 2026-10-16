@@ -4,7 +4,7 @@ DRAM 的 bit flip 會在沒有任何警報的情況下損毀記憶體中的 B+ t
 
 **本頁數字全部來自 Ramulator2 後端**（cycle-accurate DDR4-2400）。先前以純 C++ DRAM 模型跑的版本，結論與本頁相同，圖表保留在 [results/figures/readme/](btree/b-tree_experiment/results/figures/readme/)。
 
-- 論文格式完整版（目前仍為 C++ 模型的數字）：[results/paper/paper.html](btree/b-tree_experiment/results/paper/paper.html)
+- 論文格式完整版（Ramulator2 數字）：[results/paper/paper.html](btree/b-tree_experiment/results/paper/paper.html)（網頁版 https://claude.ai/artifact/49M5XAigsa7fiX8gyjnirS ；C++ 模型版保留為 paper_cpp_model.html）
 - 逐節詳細數據：[results/SUMMARY_dbscale.md](btree/b-tree_experiment/results/SUMMARY_dbscale.md)；Ramulator2 彙整表：[results/paper_r2/paper_tables.md](btree/b-tree_experiment/results/paper_r2/paper_tables.md)
 - 程式架構、編譯與參數說明：[HARNESS.md](btree/b-tree_experiment/HARNESS.md)
 
